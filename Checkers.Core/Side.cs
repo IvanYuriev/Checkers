@@ -8,8 +8,20 @@ namespace Checkers.Core
 {
     public enum Side : byte
     {
-        None = 0,
-        Black = 1,
-        Red = 2
+        Nop = 0,    //out of the bounds or any other invalid values
+        Empty = 1,  
+        Black = 2,
+        Red = 3
+    }
+
+    public static class SideUtil
+    {
+        public static Side Opposite(Side s)
+        {
+            if (s == Side.Black) return Side.Red;
+            if (s == Side.Red) return Side.Black;
+
+            return Side.Nop;
+        }
     }
 }

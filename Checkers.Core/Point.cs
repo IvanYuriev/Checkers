@@ -8,38 +8,54 @@ namespace Checkers.Core
 {
     public struct Point
     {
-        public Point(byte x, byte y)
+        public static Point Nop = new Point(-1);
+        public static Point At(int row, int col) => new Point(row, col);
+
+        private Point(int emptyValue)
         {
-            X = x;
-            Y = y;
+            Row = emptyValue;
+            Col = emptyValue;
         }
 
-        public byte X { get; }
-        public byte Y { get; }
+        public Point(int row, int col)
+        {
+            if (row < 0 || col < 0)
+            {
+                this = Nop;
+                return;
+            }
 
+            Row = row;
+            Col = col;
+        }
+
+        public int Row { get; }
+        public int Col { get; }
+        
         public override bool Equals(object obj)
         {
             if (obj == null) return false;
+            if (ReferenceEquals(obj, this)) return false;
             if (obj.GetType() != typeof(Point)) return false;
 
             var that = (Point)obj;
 
-            return that.X == this.X && that.Y == this.Y;
+            return that.Row == this.Row && that.Col == this.Col;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(X, Y);
+            return HashCode.Combine(Row, Col);
         }
 
         public override string ToString()
         {
-            return $"({X,2}, {Y,2})";
+            return $"({Row,2}, {Col,2})";
         }
 
         public static bool operator ==(Point left, Point right)
         {
-            return left.Equals(right);
+            return left.Row == right.Row && left.Col == right.Col;
         }
 
         public static bool operator !=(Point left, Point right)

@@ -13,6 +13,6 @@ namespace Checkers.Core
 
 
     // Making moves!
-
+    //think quicker, DONT repeat yourself - don't loose the goal
 
 }

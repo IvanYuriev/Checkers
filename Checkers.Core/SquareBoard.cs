@@ -9,9 +9,11 @@ using System.Threading.Tasks;
 
 namespace Checkers.Core
 {
-    public struct Board
+    /// <summary>
+    /// 
+    /// </summary>
+    public struct SquareBoard
     {
-        public const int SIZE = 8;
         //bit field for board of figures, each bit encode the state of cell on the board:
         //  1 - means the cell has BLACK figure
         //  0 - means the cell is NOT have black figure (stil could contain RED figure)
@@ -21,26 +23,33 @@ namespace Checkers.Core
         //bit field of kings on the board: 1 - is a King, 0 - is not
         private ulong _kingsMask; //TODO: implement kings!
 
-        //PERF: white cells are not used, can we utilize it somehow?
+        //PERF: white cells are not used, uint is enough for each Side!
+
+        public int Size { get; private set; }
+
+        public SquareBoard(int size) : this()
+        {
+            Size = size;
+        }
 
         public Figure Get(Point p)
         {
-            EnsureBounds(p);
+            if (p == Point.Nop || p.Col >= Size || p.Row >= Size) return Figure.Nop;
 
-            var bitPosition = SIZE * p.Y + p.X;
+            var bitPosition = Size * p.Col + p.Row;
             if (IsBlack(bitPosition)) return new Figure(p, Side.Black, IsKing(bitPosition));
             if (IsRed(bitPosition)) return new Figure(p, Side.Red, IsKing(bitPosition));
 
-            return new Figure(p, Side.None);
+            return new Figure(p, Side.Empty);
         }
 
         public bool IsEmpty(Point p)
         {
             //out of bound cells are treated as NON empty
-            if (p.X < 0 || p.X >= SIZE) return false;
-            if (p.Y < 0 || p.Y >= SIZE) return false;
+            if (p.Row < 0 || p.Row >= Size) return false;
+            if (p.Col < 0 || p.Col >= Size) return false;
 
-            var bitPosition = SIZE * p.Y + p.X;
+            var bitPosition = Size * p.Col + p.Row;
             return !IsBlack(bitPosition) && !IsRed(bitPosition);
         }
 
@@ -48,7 +57,7 @@ namespace Checkers.Core
         {
             EnsureBounds(cell.Point);
 
-            var bitPosition = SIZE * cell.Point.Y + cell.Point.X;
+            var bitPosition = Size * cell.Point.Col + cell.Point.Row;
             SetKingsMaskBit(cell, bitPosition);
             if (cell.Side == Side.Red)
             {
@@ -67,18 +76,48 @@ namespace Checkers.Core
             }
         }
 
+        public void Clear(Point p)
+        {
+            EnsureBounds(p);
+
+            var bitPosition = Size * p.Col + p.Row;
+            _blackFigures &= ~((ulong)1 << bitPosition);
+            _redFigures &= ~((ulong)1 << bitPosition);
+            _kingsMask &= ~((ulong)1 << bitPosition);
+        }
+
+        public Figure[] GetAll(Side side)
+        {
+            if (side <= Side.Empty) throw new ArgumentException($"Expected valid side, but got {side}");
+
+            var result = new List<Figure>(); //TODO: could be improved - fast path!
+            var figures = side == Side.Black ? _blackFigures : _redFigures;
+            for (byte i = 0; i < Size; i++)
+            {
+                for (byte j = 0; j < Size; j++)
+                {
+                    var bitPosition = Size * j + i;
+                    if (((figures >> bitPosition) & 1) == 1)
+                    {
+                        result.Add(new Figure(Point.At(i, j), side, IsKing(bitPosition)));
+                    }
+                }
+            }
+            return result.ToArray();
+        }
+
         public override string ToString()
         {
             var result = new StringBuilder();
-            for (byte i = 0; i < SIZE; i++)
+            for (byte i = 0; i < Size; i++)
             {
-                for (byte j = 0; j < SIZE; j++)
+                for (byte j = 0; j < Size; j++)
                 {
                     var p = new Point(i, j);
                     var cell = Get(p);
                     switch(cell.Side)
                     {
-                        case Side.None:
+                        case Side.Empty:
                             result.Append('o');
                             break;
                         case Side.Black:
@@ -95,12 +134,13 @@ namespace Checkers.Core
             return result.ToString();
         }
 
-        private static void EnsureBounds(Point p)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureBounds(Point p)
         {
-            Contract.Ensures(p.X < 8);
-            Contract.Ensures(p.Y < 8);
-            Contract.Ensures(p.X >= 0);
-            Contract.Ensures(p.Y >= 0);
+            Contract.Ensures(p.Row < Size);
+            Contract.Ensures(p.Col < Size);
+            Contract.Ensures(p.Row >= 0);
+            Contract.Ensures(p.Col >= 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

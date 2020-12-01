@@ -9,20 +9,20 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void Ctor_EnsureBoardIsEmpty()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             Console.Write(subject.ToString());
 
             AllCells(pos =>
             {
-                Assert.AreEqual(Side.None, subject.Get(pos).Side);
+                Assert.AreEqual(Side.Empty, subject.Get(pos).Side);
             });
         }
 
         [TestMethod]
         public void SetAndGet_BlackFigure()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             subject.Set(new Figure(new Point(1, 1), Side.Black));
 
@@ -32,7 +32,7 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void SetAndGet_RedFigure()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             subject.Set(new Figure(new Point(7, 7), Side.Red));
 
@@ -42,7 +42,7 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void SetAndGet_MixedFiguresOnEdges_CheckAllWithEmptyCells()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
             var topLeft = new Point(0, 0);
             var topRight = new Point(0, 7);
             var bottomLeft = new Point(7, 0);
@@ -61,14 +61,14 @@ namespace Checkers.Core.Tests
                 else if (pos == topRight || pos == bottomRight)
                     Assert.AreEqual(Side.Black, subject.Get(pos).Side);
                 else
-                    Assert.AreEqual(Side.None, subject.Get(pos).Side);
+                    Assert.AreEqual(Side.Empty, subject.Get(pos).Side);
             });
         }
 
         [TestMethod]
         public void IsEmpty_Empty()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
             var topLeft = new Point(0, 0);
             var bottomRight = new Point(7, 7);
 
@@ -85,7 +85,7 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void IsEmpty_NonEmpty()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
             var topLeft = new Point(0, 0);
             var bottomRight = new Point(7, 7);
 
@@ -99,18 +99,18 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void IsEmpty_OutOfBounds_NotEmpty()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             Assert.IsFalse(subject.IsEmpty(new Point(-1, 0)));
-            Assert.IsFalse(subject.IsEmpty(new Point(0, Board.SIZE)));
-            Assert.IsFalse(subject.IsEmpty(new Point(Board.SIZE, Board.SIZE)));
-            Assert.IsFalse(subject.IsEmpty(new Point(-1, Board.SIZE)));
+            Assert.IsFalse(subject.IsEmpty(new Point(0, 8)));
+            Assert.IsFalse(subject.IsEmpty(new Point(8, 8)));
+            Assert.IsFalse(subject.IsEmpty(new Point(-1, 7)));
         }
 
         [TestMethod]
         public void King_NoKingsForEmptyBoard()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             AllCells(pos => { Assert.IsFalse(subject.Get(pos).IsKing); });
         }
@@ -118,7 +118,7 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void King_SetAndCheck()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             var position = new Point(1, 1);
             subject.Set(new Figure(new Point(1, 1), Side.Black, isKing: true));
@@ -129,20 +129,20 @@ namespace Checkers.Core.Tests
         [TestMethod]
         public void King_MoveKing_ShouldResetPreviousPosition()
         {
-            var subject = new Board();
+            var subject = new SquareBoard(8);
 
             var position = new Point(1, 1);
             subject.Set(new Figure(new Point(1, 1), Side.Black, isKing: true));
-            subject.Set(new Figure(position, Side.None));
+            subject.Set(new Figure(position, Side.Empty));
 
             Assert.IsFalse(subject.Get(position).IsKing);
         }
 
         private void AllCells(Action<Point> Assertion)
         {
-            for (int i = 0; i < Board.SIZE; i++)
+            for (int i = 0; i < 8; i++)
             {
-                for (int j = 0; j < Board.SIZE; j++)
+                for (int j = 0; j < 8; j++)
                 {
                     Assertion(new Point(i, j));
                 }
