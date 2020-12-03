@@ -134,13 +134,13 @@ namespace Checkers.Core.Board
                     switch(cell.Side)
                     {
                         case Side.Empty:
-                            result.Append('o');
+                            result.Append('.');
                             break;
                         case Side.Black:
-                            result.Append('b');
+                            if (cell.IsKing) result.Append('β'); else result.Append('b');
                             break;
                         case Side.Red:
-                            result.Append('r');
+                            if (cell.IsKing) result.Append('ρ'); else result.Append('r');
                             break;
                     }
                     result.Append(' ');

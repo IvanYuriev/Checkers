@@ -1,12 +1,12 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Checkers.Core.Board;
+using System;
+using Xunit;
 
 namespace Checkers.Core.Tests
 {
-    [TestClass]
     public class BoardTests
     {
-        [TestMethod]
+        [Fact]
         public void Ctor_EnsureBoardIsEmpty()
         {
             var subject = new SquareBoard(8);
@@ -15,31 +15,31 @@ namespace Checkers.Core.Tests
 
             AllCells(pos =>
             {
-                Assert.AreEqual(Side.Empty, subject.Get(pos).Side);
+                Assert.Equal(Side.Empty, subject.Get(pos).Side);
             });
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndGet_BlackFigure()
         {
             var subject = new SquareBoard(8);
 
             subject.Set(new Figure(new Point(1, 1), Side.Black));
 
-            Assert.AreEqual(Side.Black, subject.Get(new Point(1, 1)).Side);
+            Assert.Equal(Side.Black, subject.Get(new Point(1, 1)).Side);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndGet_RedFigure()
         {
             var subject = new SquareBoard(8);
 
             subject.Set(new Figure(new Point(7, 7), Side.Red));
 
-            Assert.AreEqual(Side.Red, subject.Get(new Point(7, 7)).Side);
+            Assert.Equal(Side.Red, subject.Get(new Point(7, 7)).Side);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndGet_MixedFiguresOnEdges_CheckAllWithEmptyCells()
         {
             var subject = new SquareBoard(8);
@@ -57,15 +57,15 @@ namespace Checkers.Core.Tests
             AllCells(pos =>
             {
                 if (pos == topLeft || pos == bottomLeft)
-                    Assert.AreEqual(Side.Red, subject.Get(pos).Side);
+                    Assert.Equal(Side.Red, subject.Get(pos).Side);
                 else if (pos == topRight || pos == bottomRight)
-                    Assert.AreEqual(Side.Black, subject.Get(pos).Side);
+                    Assert.Equal(Side.Black, subject.Get(pos).Side);
                 else
-                    Assert.AreEqual(Side.Empty, subject.Get(pos).Side);
+                    Assert.Equal(Side.Empty, subject.Get(pos).Side);
             });
         }
 
-        [TestMethod]
+        [Fact]
         public void IsEmpty_Empty()
         {
             var subject = new SquareBoard(8);
@@ -78,11 +78,11 @@ namespace Checkers.Core.Tests
             AllCells(pos =>
             {
                 if (pos != topLeft && pos != bottomRight)
-                    Assert.IsTrue(subject.IsEmpty(pos));
+                    Assert.True(subject.IsEmpty(pos));
             });
         }
 
-        [TestMethod]
+        [Fact]
         public void IsEmpty_NonEmpty()
         {
             var subject = new SquareBoard(8);
@@ -92,30 +92,30 @@ namespace Checkers.Core.Tests
             subject.Set(new Figure(topLeft, Side.Red));
             subject.Set(new Figure(bottomRight, Side.Black));
 
-            Assert.IsFalse(subject.IsEmpty(topLeft));
-            Assert.IsFalse(subject.IsEmpty(bottomRight));
+            Assert.False(subject.IsEmpty(topLeft));
+            Assert.False(subject.IsEmpty(bottomRight));
         }
 
-        [TestMethod]
+        [Fact]
         public void IsEmpty_OutOfBounds_NotEmpty()
         {
             var subject = new SquareBoard(8);
 
-            Assert.IsFalse(subject.IsEmpty(new Point(-1, 0)));
-            Assert.IsFalse(subject.IsEmpty(new Point(0, 8)));
-            Assert.IsFalse(subject.IsEmpty(new Point(8, 8)));
-            Assert.IsFalse(subject.IsEmpty(new Point(-1, 7)));
+            Assert.False(subject.IsEmpty(new Point(-1, 0)));
+            Assert.False(subject.IsEmpty(new Point(0, 8)));
+            Assert.False(subject.IsEmpty(new Point(8, 8)));
+            Assert.False(subject.IsEmpty(new Point(-1, 7)));
         }
 
-        [TestMethod]
+        [Fact]
         public void King_NoKingsForEmptyBoard()
         {
             var subject = new SquareBoard(8);
 
-            AllCells(pos => { Assert.IsFalse(subject.Get(pos).IsKing); });
+            AllCells(pos => { Assert.False(subject.Get(pos).IsKing); });
         }
 
-        [TestMethod]
+        [Fact]
         public void King_SetAndCheck()
         {
             var subject = new SquareBoard(8);
@@ -123,10 +123,10 @@ namespace Checkers.Core.Tests
             var position = new Point(1, 1);
             subject.Set(new Figure(new Point(1, 1), Side.Black, isKing: true));
 
-            Assert.IsTrue(subject.Get(position).IsKing);
+            Assert.True(subject.Get(position).IsKing);
         }
 
-        [TestMethod]
+        [Fact]
         public void King_MoveKing_ShouldResetPreviousPosition()
         {
             var subject = new SquareBoard(8);
@@ -135,7 +135,7 @@ namespace Checkers.Core.Tests
             subject.Set(new Figure(new Point(1, 1), Side.Black, isKing: true));
             subject.Set(new Figure(position, Side.Empty));
 
-            Assert.IsFalse(subject.Get(position).IsKing);
+            Assert.False(subject.Get(position).IsKing);
         }
 
         private void AllCells(Action<Point> Assertion)

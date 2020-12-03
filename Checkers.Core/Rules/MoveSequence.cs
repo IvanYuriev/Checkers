@@ -12,9 +12,9 @@ namespace Checkers.Core.Rules
         private HashSet<Point> _set = new HashSet<Point>();
 
         internal MoveSequence() { }
-        internal MoveSequence(MoveStep p) : this()
+        internal MoveSequence(params MoveStep[] steps) : this()
         {
-            Add(p);
+            foreach(var step in steps) Add(step);
         }
 
         internal MoveSequence(MoveSequence sequence) : this()

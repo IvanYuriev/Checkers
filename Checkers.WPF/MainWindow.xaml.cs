@@ -30,8 +30,9 @@ namespace Checkers.WPF
     {
         private ObservableCollection<Cell> Cells;
         private Game game;
-
-        public GameSide PlayerSide => GameSide.Black;
+        private MovesModel SelectedMovesModel;
+        private IDictionary<Figure, MoveSequence[]> AllAvailableMoves;
+        private GameSide PlayerSide { get; set; } = GameSide.Red;
 
         public MainWindow()
         {
@@ -43,43 +44,14 @@ namespace Checkers.WPF
 
         private void InitializeGame()
         {
-            SquareBoard board = new SquareBoard(8);
-            board.Set(Figure.CreateSimple(1, 3, Side.Red));
-            board.Set(Figure.CreateSimple(1, 1, Side.Red));
-            board.Set(Figure.CreateSimple(3, 5, Side.Red));
-            board.Set(Figure.CreateSimple(1, 5, Side.Red));
-            board.Set(Figure.CreateSimple(2, 4, Side.Red));
-            board.Set(Figure.CreateKing(4, 6, Side.Black));
-            board.Set(Figure.CreateSimple(2, 2, Side.Black));
-            //for (int i = 0; i < board.Size; i++)
-            //{
-            //    for (int j = 0; j < board.Size; j++)
-            //    {
-            //        if (i == 3 || i == 4) continue;
-
-            //        var side = i < 3 ? Core.Side.Red : Side.Black;
-            //        if (i % 2 != j % 2) board.Set(Figure.CreateSimple(i, j, side));
-            //    }
-            //}
-            game = new Game(board, PlayerSide);
+            game = new Game(new EnglishDraughtsRules(), new DraughtsBorderBuilder());
             game.OnMoveCompleted += Game_OnMoveCompleted;
-
             RedrawBoard();
         }
 
-        private void Reset()
-        {
-            if (game == null) return;
-            game.OnMoveCompleted -= Game_OnMoveCompleted;
+        private void Reset() => game.Start(PlayerSide);
 
-            InitializeGame();
-        }
-
-        private void Game_OnMoveCompleted(object sender, EventArgs e)
-        {
-            // Entire redrawing all the cells - not optimal, but not a frequent as well
-            RedrawBoard();
-        }
+        private void Game_OnMoveCompleted(object sender, EventArgs e) => RedrawBoard();
 
         private void RedrawBoard()
         {
@@ -94,51 +66,16 @@ namespace Checkers.WPF
                 }
             }
             Cells = cells;
-            this.ChessBoard.ItemsSource = this.Cells;
+            ChessBoard.ItemsSource = Cells;
+            _availableMoves?.Clear();
+            SelectedMovesModel = null;
             AllAvailableMoves = game.GetValidMoves();
+            SelectedFigure = Figure.Nop;
         }
 
-        public class MovesModel
-        {
-            public string Text { get; set; }
-            public int Index { get; set; }
-            public MoveSequence Sequence { get; set; }
-        }
+        private void Start(object sender, RoutedEventArgs e) => Reset();
 
-        private void btnStart_Click(object sender, RoutedEventArgs e)
-        {
-            Reset();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            var b = e.Source as Button;
-            var cell = b.Tag as Cell;
-
-            if (cell.Figure.Side == Side.Empty)
-            {
-                //MakeMove
-                game.MakeMove(SelectedFigure, SelectedMovesModel.Index);
-            }
-            else
-            {
-                AvailableMoves.Clear();
-                if (AllAvailableMoves.TryGetValue(cell.Figure, out var figureMoves) && figureMoves.Length > 0)
-                {
-                    foreach (var move in figureMoves.Select((x, i) => new MovesModel { Text = x.ToString(), Index = i, Sequence = x }))
-                    {
-                        AvailableMoves.Add(move);
-                    }
-                }
-            }
-
-            SelectedFigure = cell.Figure;
-            
-            foreach (var c in Cells)
-            {
-                if (c.Type == PieceType.None) c.Active = false;
-            }
-        }
+        #region Notifiable Properties
 
         private ObservableCollection<MovesModel> _availableMoves;
         public ObservableCollection<MovesModel> AvailableMoves
@@ -148,15 +85,11 @@ namespace Checkers.WPF
         }
 
         private Figure _selectedFigure;
-        private MovesModel SelectedMovesModel;
-
         public Figure SelectedFigure
         {
             get { return _selectedFigure; }
             set { _selectedFigure = value; OnPropertyChanged("SelectedFigure"); }
         }
-
-        public IDictionary<Figure, MoveSequence[]> AllAvailableMoves { get; private set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -164,18 +97,48 @@ namespace Checkers.WPF
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        #endregion
 
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void CellSelected(object sender, RoutedEventArgs e)
         {
-            var b = e.Source as Button;
-            SelectedMovesModel = b.Tag as MovesModel;
+            var cell = e.ButtonTag<Cell>();
+            if (cell.Figure.Side == Side.Empty)
+            {
+                game.MakeMove(SelectedFigure, SelectedMovesModel.Index);
+            }
+            else
+            {
+                AvailableMoves.Clear();
+                if (AllAvailableMoves.TryGetValue(cell.Figure, out var figureMoves) && figureMoves.Length > 0)
+                {
+                    foreach (var move in figureMoves.Select((seq, i) => new MovesModel($"{i + 1}", i, seq)))
+                    {
+                        AvailableMoves.Add(move);
+                    }
+                }
+            }
+
+            SelectedFigure = cell.Figure;
 
             foreach (var c in Cells)
             {
-                var availableMoveCell = SelectedMovesModel.Sequence.Contains(c.Pos);
-                if (c.Type == PieceType.None) c.Active = availableMoveCell;
+                if (c.Type == PieceType.None) c.Active = false;
             }
+        }
+
+        private void MoveSelected(object sender, MouseEventArgs e)
+        {
+            SelectedMovesModel = e.ButtonTag<MovesModel>();
+            foreach (var cell in Cells)
+            {
+                var availableMoveCell = SelectedMovesModel.Sequence.Contains(cell.Pos);
+                if (cell.Type == PieceType.None) cell.Active = availableMoveCell;
+            }
+        }
+
+        private void MakeMove(object sender, RoutedEventArgs e)
+        {
+            game.MakeMove(SelectedFigure, SelectedMovesModel.Index);
         }
     }
 }

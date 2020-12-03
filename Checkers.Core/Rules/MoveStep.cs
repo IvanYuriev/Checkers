@@ -6,7 +6,10 @@ namespace Checkers.Core.Rules
     {
         public MoveStepTypes Type { get; private set; }
         public Point Target { get; private set; }
-        
+
+        public static MoveStep Jump(int row, int col) => new MoveStep { Type = MoveStepTypes.Jump, Target = Point.At(row, col) };
+        public static MoveStep Move(int row, int col) => new MoveStep { Type = MoveStepTypes.Move, Target = Point.At(row, col) };
+
         public static MoveStep Jump(Point p) => new MoveStep { Type = MoveStepTypes.Jump, Target = p };
         public static MoveStep Move(Point p) => new MoveStep { Type = MoveStepTypes.Move, Target = p };
         public static MoveStep King() => new MoveStep { Type = MoveStepTypes.PromoteKing, Target = Point.Nop };

@@ -1,4 +1,5 @@
 ﻿using Checkers.Core.Board;
+using Checkers.Core.Game;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -7,24 +8,22 @@ namespace Checkers.Core.Rules
 {
     public class EnglishDraughtsRules : IRules
     {
-        private readonly ReadOnlyBoard board;
+        private SquareBoard board;
 
-        public EnglishDraughtsRules(ReadOnlyBoard board)
-        {
-            this.board = board;
-        }
+        public GameSide FirstMoveSide => GameSide.Red;
 
-        public bool GameIsOver()
+        public bool GameIsOver(SquareBoard board)
         {
             //TODO: need to find more optimal solution
-            var blackMoves = GetMoves(Side.Black).Count;
-            var redMoves = GetMoves(Side.Red).Count;
+            var blackMoves = GetMoves(board, Side.Black).Count;
+            var redMoves = GetMoves(board, Side.Red).Count;
 
             return blackMoves == 0 || redMoves == 0;
         }
 
-        public IDictionary<Figure, MoveSequence[]> GetMoves(Side side)
+        public IDictionary<Figure, MoveSequence[]> GetMoves(SquareBoard board, Side side)
         {
+            this.board = board;
             var figures = board.GetAll(side);
             var jumpMoves = new Dictionary<Figure, MoveSequence[]>(figures.Length + 1);
             var simpleMoves = new Dictionary<Figure, MoveSequence[]>(figures.Length + 1);

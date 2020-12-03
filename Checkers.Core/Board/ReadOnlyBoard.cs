@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 namespace Checkers.Core.Board
 {
 
-    public class ReadOnlyBoard
+    public struct ReadOnlyBoard
     {
         private readonly SquareBoard board;
 
-        public ReadOnlyBoard(ref SquareBoard board)
+        public ReadOnlyBoard(SquareBoard board)
         {
             this.board = board;
         }

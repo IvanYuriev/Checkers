@@ -8,77 +8,64 @@ namespace Checkers.Core.Game
 {
     public class Game
     {
-        private readonly IRules _movesProvider;
-        private readonly GameSide _playerSide;
+        private readonly IRules _rulesProvider;
+        private readonly IBoardBuilder _boardBuilder;
+
+        private GameSide _playerSide;
         private IDictionary<Figure, MoveSequence[]> _currentValidMoves;
         private Stack<History> _moveHistory;
         private SquareBoard _board;
-
-        private Game()
+        
+        public Game(IRules rulesProvider, IBoardBuilder boardBuilder)
         {
+            _rulesProvider = rulesProvider;
+            _boardBuilder = boardBuilder;
             _moveHistory = new Stack<History>();
-            SideMoveNow = GameSide.Black;
-        }
-
-        public Game(SquareBoard board, GameSide playerSide) : this()
-        {
-            _board = board;
-            _playerSide = playerSide;
-            _movesProvider = new EnglishDraughtsRules(new ReadOnlyBoard(ref _board));
+            _currentValidMoves = new Dictionary<Figure, MoveSequence[]>();
+            Start(GameSide.Black); //by default
         }
 
         public GameSide PlayerSide => _playerSide;
         public GameSide SideMoveNow { get; private set; }
         protected Side CoreSideMoveNow => SideMoveNow == GameSide.Black ? Side.Black : Side.Red;
 
+        public void Start(GameSide playerSide)
+        {
+            _playerSide = playerSide;
+            _moveHistory.Clear();
+            _board = _boardBuilder.Build();
+            _currentValidMoves.Clear();
+            SideMoveNow = _rulesProvider.FirstMoveSide;
+        }
+
         public void MakeMove(Figure figure, int moveIndex)
         {
             if (!_currentValidMoves.TryGetValue(figure, out var moves))
                 throw new GameException($"Can't find figure {figure}");
-
             if (moves.Length <= moveIndex)
                 throw new GameException($"Can't find move index for {figure}: {moveIndex}");
 
             var move = moves[moveIndex];
 
-            //DO Command
+            // Update History
             _moveHistory.Push(new History { Side = SideMoveNow, Move = move, BoardBeforeMove = _board });
 
-            var currentFigure = figure;
-            foreach (var step in move)
-            {
-                var position = currentFigure.Point;
-                switch (step.Type)
-                {
-                    case MoveStepTypes.Move:
-                        _board.Clear(position);
-                        currentFigure = new Figure(step.Target, figure.Side, figure.IsKing);
-                        _board.Set(currentFigure);
-                        break;
-                    case MoveStepTypes.PromoteKing:
-                        _board.SetKing(position);
-                        break;
-                    case MoveStepTypes.Jump:
-                        // jump over the enemy cell
-                        _board.Clear(position);
-                        currentFigure = new Figure(step.Target, figure.Side, figure.IsKing);
-                        _board.Set(currentFigure);
+            // DO move
+            var moveHandler = new MoveCommandChain(figure, _board, move);
+            _board = moveHandler.Execute();
 
-                        // remove enemy piece
-                        (int row, int col) offset = (1, 1); //moving bottom right
-                        if (position.Row > step.Target.Row) offset.row = -1; //moving upper
-                        if (position.Col > step.Target.Col) offset.col = -1; //moving left
-                        var middlePoint = Point.At(position.Row + offset.row, position.Col + offset.col);
-
-                        //TODO: Notify Scoring about removed enemy figure
-                        var enemy = _board.Get(middlePoint);
-
-                        _board.Clear(middlePoint);
-                        break;
-                }
-            }
+            //UPDATE SCORING!
+            if (_rulesProvider.GameIsOver(Board)) ; //SideMoveNow won!
 
             //ToggleSide();
+
+            //LET BOT MAKE A MOVE!
+            if (_rulesProvider.GameIsOver(Board)) ; //SideMoveNow won!
+
+            //ToggleSide();
+
+            // Reset available moves
+            UpdateAvailableMoves();
             RaiseOnMoveCompleted();
         }
 
@@ -106,9 +93,13 @@ namespace Checkers.Core.Game
 
         public IDictionary<Figure, MoveSequence[]> GetValidMoves()
         {
-            //if (_currentValidMoves == null)
-                _currentValidMoves = _movesProvider.GetMoves(CoreSideMoveNow);
+            if (_currentValidMoves == null) UpdateAvailableMoves();
             return new Dictionary<Figure, MoveSequence[]>(_currentValidMoves);
+        }
+
+        private void UpdateAvailableMoves()
+        {
+            _currentValidMoves = _rulesProvider.GetMoves(Board, CoreSideMoveNow);
         }
 
         public SquareBoard Board => _board;
