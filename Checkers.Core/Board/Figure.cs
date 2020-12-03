@@ -4,19 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Checkers.Core
+namespace Checkers.Core.Board
 {
-    public class Direction
-    {
-        public static Func<Point, int, Point> Nop = new Func<Point, int, Point>((p, steps) 
-            => throw new NotSupportedException("NOP direction should not be used!"));
-
-        public static Func<Point, int, Point> UpperLeft = new Func<Point, int, Point>((p, steps) => new Point(p.Row - steps, p.Col - steps));
-        public static Func<Point, int, Point> UpperRight = new Func<Point, int, Point>((p, steps) => new Point(p.Row - steps, p.Col + steps));
-        public static Func<Point, int, Point> BottomLeft = new Func<Point, int, Point>((p, steps) => new Point(p.Row + steps, p.Col - steps));
-        public static Func<Point, int, Point> BottomRight = new Func<Point, int, Point>((p, steps) => new Point(p.Row + steps, p.Col + steps));
-    }
-
     public struct Figure
     {
         public static Figure Nop = new Figure(Point.Nop, Side.Nop);
@@ -76,10 +65,10 @@ namespace Checkers.Core
             return $"{Point}:{Side}{isKingMark}";
         }
 
-        public override int GetHashCode()
-        {
-            return Point.GetHashCode();
-        }
-        //TODO: override others
+        public override int GetHashCode() => (Point, Side).GetHashCode();
+
+        public override bool Equals(object obj) => obj is Figure m && Equals(m);
+
+        public bool Equals(Figure other) => Side == other.Side && Point == other.Point && IsKing == other.IsKing;
     }
 }

@@ -61,6 +61,13 @@
         <StackPanel Orientation="Vertical" Grid.Row="0" Background="Azure">
             <Button x:Name="btnStart" Content="Start" Height="40" Click="btnStart_Click" Margin="0, 0, 0, 5" />
             <Button x:Name="btnUndo" Content="Undo" Height="40" />
+            <ItemsControl x:Name="lstMoves" DataContext="{Binding AvailableMoves}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Tag="{Binding}" Content="{Binding Text}" Click="Button_Click_1" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
 
         <Viewbox Grid.Column="1">
@@ -74,15 +81,15 @@
                     <DataTemplate>
                         <Grid Width="1" Height="1">
                             <Grid Width="0.8" Height="0.8" Style="{StaticResource CellStyle}" >
-                                <Button Opacity="0.5" Click="Button_Click" Tag="{Binding Pos}" />
+                                <Button Opacity="0.5" Click="Button_Click" Tag="{Binding}" IsEnabled="{Binding Active}" />
                             </Grid>
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
                 <ItemsControl.ItemContainerStyle>
                     <Style>
-                        <Setter Property="Canvas.Left" Value="{Binding Pos.X}" />
-                        <Setter Property="Canvas.Top" Value="{Binding Pos.Y}" />
+                        <Setter Property="Canvas.Left" Value="{Binding Pos.Col}" />
+                        <Setter Property="Canvas.Top" Value="{Binding Pos.Row}" />
                     </Style>
                 </ItemsControl.ItemContainerStyle>
             </ItemsControl>

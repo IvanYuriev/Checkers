@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Checkers.Core
+namespace Checkers.Core.Board
 {
     public enum Side : byte
     {
@@ -12,16 +12,5 @@ namespace Checkers.Core
         Empty = 1,  
         Black = 2,
         Red = 3
-    }
-
-    public static class SideUtil
-    {
-        public static Side Opposite(Side s)
-        {
-            if (s == Side.Black) return Side.Red;
-            if (s == Side.Red) return Side.Black;
-
-            return Side.Nop;
-        }
     }
 }

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Checkers.Core
+namespace Checkers.Core.Board
 {
     /// <summary>
     /// 
@@ -83,6 +83,22 @@ namespace Checkers.Core
             var bitPosition = Size * p.Col + p.Row;
             _blackFigures &= ~((ulong)1 << bitPosition);
             _redFigures &= ~((ulong)1 << bitPosition);
+            _kingsMask &= ~((ulong)1 << bitPosition);
+        }
+
+        public void SetKing(Point p)
+        {
+            EnsureBounds(p);
+
+            var bitPosition = Size * p.Col + p.Row;
+            _kingsMask |= (ulong)1 << bitPosition;
+        }
+
+        public void ClearKing(Point p)
+        {
+            EnsureBounds(p);
+
+            var bitPosition = Size * p.Col + p.Row;
             _kingsMask &= ~((ulong)1 << bitPosition);
         }
 

@@ -44,14 +44,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SquareBoard.cs" />
-    <Compile Include="Figure.cs" />
-    <Compile Include="Game.cs" />
-    <Compile Include="Move.cs" />
-    <Compile Include="MovesProvider.cs" />
-    <Compile Include="Point.cs" />
+    <Compile Include="Board\Direction.cs" />
+    <Compile Include="Board\SideUtil.cs" />
+    <Compile Include="Game\Game.cs" />
+    <Compile Include="Game\GameException.cs" />
+    <Compile Include="Game\GameSide.cs" />
+    <Compile Include="Game\History.cs" />
+    <Compile Include="Rules\EnglishDraughtsRules.cs" />
+    <Compile Include="Rules\IRules.cs" />
+    <Compile Include="Rules\MoveSequence.cs" />
+    <Compile Include="Rules\MoveStep.cs" />
+    <Compile Include="Rules\MoveStepTypes.cs" />
+    <Compile Include="Board\SquareBoard.cs" />
+    <Compile Include="Board\Figure.cs" />
+    <Compile Include="Board\ReadOnlyBoard.cs" />
+    <Compile Include="Board\Point.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Side.cs" />
+    <Compile Include="Board\Side.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
