@@ -4,6 +4,7 @@ using Checkers.Core.Rules;
 using Checkers.Core.Rules.Commands;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,7 +42,7 @@ namespace Checkers.Core.Game
             SideMoveNow = _rulesProvider.FirstMoveSide;
 
             if (SideMoveNow != PlayerSide)
-                await MakeBotMove();
+                MakeBotRandomMove();
 
             UpdateAvailableMoves();
             RaiseOnMoveCompleted();
@@ -72,6 +73,16 @@ namespace Checkers.Core.Game
 
             UpdateAvailableMoves();
             RaiseOnMoveCompleted();
+        }
+
+        public void MakeBotRandomMove()
+        {
+            var rnd = new Random((int)DateTime.UtcNow.Ticks);
+            UpdateAvailableMoves();
+            var figureIndex = rnd.Next(_currentValidMoves.Count - 1);
+
+            var figure = _currentValidMoves.ElementAt(figureIndex);
+            MakeMove(figure.Key, rnd.Next(figure.Value.Length - 1));
         }
 
         public async Task MakeBotMove(int millisecondsPerMove = 5000)

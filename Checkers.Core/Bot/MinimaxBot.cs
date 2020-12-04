@@ -21,7 +21,6 @@ namespace Checkers.Core.Bot
         private CancellationToken cancellation;
         private const int BOT_LOST_SCORE = Int32.MinValue;
         private const int PLAYER_LOST_SCORE = Int32.MaxValue;
-
         private const int MAX_DEPTH = 50;
 
         private object locker = new object();
@@ -52,7 +51,8 @@ namespace Checkers.Core.Bot
             {
                 var botScore = boardScoring.Evaluate(board, botSide);
                 var playerScore = boardScoring.Evaluate(board, playerSide);
-                var score = isMaximizer ? botScore - playerScore : playerScore - botScore;
+                //var score = isMaximizer ? botScore - playerScore : playerScore - botScore;
+                var score = botScore - playerScore;
                 return new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
             }
 
@@ -68,9 +68,9 @@ namespace Checkers.Core.Bot
                     for (int i = 0; i < figure.Value.Length; i++)
                     {
                         var move = figure.Value[i];
-                        var afterMove = new MoveCommandChain(figure.Key, board, move).Execute();
+                        var boardAfterMove = new MoveCommandChain(figure.Key, board, move).Execute();
                         var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
-                        var botMove = AlphaBeta(afterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
+                        var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
                         currentMove.Score = botMove.Score;
                         lock (locker)
                         {
@@ -98,9 +98,9 @@ namespace Checkers.Core.Bot
                     for (int i = 0; i < figure.Value.Length; i++)
                     {
                         var move = figure.Value[i];
-                        var afterMove = new MoveCommandChain(figure.Key, board, move).Execute();
+                        var boardAfterMove = new MoveCommandChain(figure.Key, board, move).Execute();
                         var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
-                        var botMove = AlphaBeta(afterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
+                        var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
                         currentMove.Score = botMove.Score;
                         //THREADING!
                         if (botMove.Score < bestScore)

@@ -42,6 +42,7 @@ namespace Checkers.WPF
             _availableMoves = new ObservableCollection<MovesModel>();
             lstMoves.ItemsSource = AvailableMoves;
             GameField.DataContext = this;
+            btnPushBot.DataContext = this;
         }
 
         private void InitializeGame()
@@ -178,7 +179,7 @@ namespace Checkers.WPF
             }
             catch(GameException gameEx)
             {
-                MessageBox.Show(gameEx.Message);
+                MessageBox.Show(gameEx.Message); //TODO: apply TextBlock
             }
         }
 
@@ -190,7 +191,7 @@ namespace Checkers.WPF
             }
             catch (GameException gameEx)
             {
-                MessageBox.Show(gameEx.Message);
+                MessageBox.Show(gameEx.Message); //TODO: apply TextBlock
             }
         }
 
