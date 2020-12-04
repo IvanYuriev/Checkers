@@ -58,7 +58,10 @@ namespace Checkers.Core.Rules
                 var jump = GetJumpPoint(figure, direction, out var neighbour);
                 if (jump == Point.Nop && neighbour.Side == Side.Empty)
                 {
-                    simpleMoves.Add(new MoveSequence(MoveStep.Move(neighbour.Point)));
+                    var sequence = new MoveSequence(MoveStep.Move(neighbour.Point));
+                    if (!figure.IsKing && ShouldPromoteKing(new Figure(neighbour.Point, figure.Side, figure.IsKing), board.Size))
+                        sequence.Add(MoveStep.King());
+                    simpleMoves.Add(sequence);
                 }
             }
         }

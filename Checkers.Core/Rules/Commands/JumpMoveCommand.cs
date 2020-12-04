@@ -1,7 +1,7 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Rules;
 
-namespace Checkers.Core.Rules
+namespace Checkers.Core.Rules.Commands
 {
     public class JumpMoveCommand : IMoveCommand
     {

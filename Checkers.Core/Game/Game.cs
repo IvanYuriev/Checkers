@@ -1,8 +1,11 @@
 ﻿using Checkers.Core.Board;
+using Checkers.Core.Bot;
 using Checkers.Core.Rules;
+using Checkers.Core.Rules.Commands;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Checkers.Core.Game
 {
@@ -10,36 +13,46 @@ namespace Checkers.Core.Game
     {
         private readonly IRules _rulesProvider;
         private readonly IBoardBuilder _boardBuilder;
-
+        private readonly IBot _bot;
         private GameSide _playerSide;
         private IDictionary<Figure, MoveSequence[]> _currentValidMoves;
         private Stack<History> _moveHistory;
         private SquareBoard _board;
         
-        public Game(IRules rulesProvider, IBoardBuilder boardBuilder)
+        public Game(IRules rulesProvider, IBoardBuilder boardBuilder, IBot bot)
         {
             _rulesProvider = rulesProvider;
             _boardBuilder = boardBuilder;
+            _bot = bot;
             _moveHistory = new Stack<History>();
             _currentValidMoves = new Dictionary<Figure, MoveSequence[]>();
-            Start(GameSide.Black); //by default
         }
 
         public GameSide PlayerSide => _playerSide;
         public GameSide SideMoveNow { get; private set; }
         protected Side CoreSideMoveNow => SideMoveNow == GameSide.Black ? Side.Black : Side.Red;
 
-        public void Start(GameSide playerSide)
+        public async Task Start(GameSide playerSide)
         {
             _playerSide = playerSide;
             _moveHistory.Clear();
             _board = _boardBuilder.Build();
             _currentValidMoves.Clear();
             SideMoveNow = _rulesProvider.FirstMoveSide;
+
+            if (SideMoveNow != PlayerSide)
+                await MakeBotMove();
+
+            UpdateAvailableMoves();
+            RaiseOnMoveCompleted();
         }
+
+        public GameSide? Winner { get; private set; }
 
         public void MakeMove(Figure figure, int moveIndex)
         {
+            if (Winner.HasValue)
+                return;
             if (!_currentValidMoves.TryGetValue(figure, out var moves))
                 throw new GameException($"Can't find figure {figure}");
             if (moves.Length <= moveIndex)
@@ -48,25 +61,49 @@ namespace Checkers.Core.Game
             var move = moves[moveIndex];
 
             // Update History
-            _moveHistory.Push(new History { Side = SideMoveNow, Move = move, BoardBeforeMove = _board });
+            _moveHistory.Push(new History { Side = SideMoveNow, Move = move, BoardBeforeMove = Board });
 
             // DO move
-            var moveHandler = new MoveCommandChain(figure, _board, move);
-            _board = moveHandler.Execute();
+            _board = new MoveCommandChain(figure, Board, move).Execute();
 
             //UPDATE SCORING!
-            if (_rulesProvider.GameIsOver(Board)) ; //SideMoveNow won!
+            if (GameIsOver()) return;
+            ToggleSide();
 
-            //ToggleSide();
-
-            //LET BOT MAKE A MOVE!
-            if (_rulesProvider.GameIsOver(Board)) ; //SideMoveNow won!
-
-            //ToggleSide();
-
-            // Reset available moves
             UpdateAvailableMoves();
             RaiseOnMoveCompleted();
+        }
+
+        public async Task MakeBotMove(int millisecondsPerMove = 5000)
+        {
+            var tokenSource = new CancellationTokenSource(millisecondsPerMove);
+            var botTask = Task.Factory.StartNew(o =>
+            {
+                return _bot.FindBestMove(Board, CoreSideMoveNow, tokenSource.Token);
+            }, tokenSource.Token);
+
+            var botMove = await botTask;
+            if (botMove.Figure == Figure.Nop)
+                throw new GameException("Bot can't find a move");
+            var currentMoves = _rulesProvider.GetMoves(Board, CoreSideMoveNow);
+            if (!currentMoves.TryGetValue(botMove.Figure, out var figureMoves))
+                throw new GameException($"Can't find bot figure: {botMove.Figure}");
+            if (botMove.MoveIndex >= figureMoves.Length)
+                throw new GameException($"Can't find bot figure move sequence index: {botMove.MoveIndex}; {botMove.Figure}");
+
+            UpdateAvailableMoves();
+            MakeMove(botMove.Figure, botMove.MoveIndex);
+        }
+
+        private bool GameIsOver()
+        {
+            if (_rulesProvider.GameIsOver(Board))
+            {
+                Winner = SideMoveNow;
+                RaiseOnMoveCompleted();
+                return true; //SideMoveNow won!
+            }
+            return false;
         }
 
         protected void ToggleSide()
@@ -79,14 +116,9 @@ namespace Checkers.Core.Game
             if (_moveHistory.Count <= 0) return false;
             if (SideMoveNow != PlayerSide) return false;
 
-            var boardBackup = _board;
-            while (_moveHistory.Count > 0 && SideMoveNow != PlayerSide)
-            {
-                var recent = _moveHistory.Pop();
-                boardBackup = recent.BoardBeforeMove;
-                SideMoveNow = recent.Side;
-            }
-            _board = boardBackup;
+            _board = _moveHistory.Pop().BoardBeforeMove;
+
+            UpdateAvailableMoves();
             RaiseOnMoveCompleted();
             return true;
         }

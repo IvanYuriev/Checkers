@@ -19,8 +19,8 @@ namespace Checkers.Core.Tests.Rules
         [Fact]
         public void GetMoves_SingleSimpleMoveForward()
         {
-            var figure = Figure.CreateSimple(1, 1, Side.Black);
-            var board = new SquareBoard(2);
+            var figure = Figure.CreateSimple(2, 0, Side.Black);
+            var board = new SquareBoard(3);
             board.Set(figure);
 
             var subject = GetSubject();
@@ -29,7 +29,7 @@ namespace Checkers.Core.Tests.Rules
             var figureMoves = Assert.Contains(figure, moves);
             var move = Assert.Single(figureMoves);
             var step = Assert.Single(move);
-            Assert.Equal(MoveStep.Move(Point.At(0, 0)), step);
+            Assert.Equal(MoveStep.Move(Point.At(1, 1)), step);
         }
 
         [Fact]
@@ -54,7 +54,25 @@ namespace Checkers.Core.Tests.Rules
         }
 
         [Fact]
-        public void GetMoves_SingleKinge_AllEmptySides()
+        public void GetMoves_SingleSimple_PromoteToKing()
+        {
+            var figure = Figure.CreateSimple(1, 1, Side.Black);
+            var board = new SquareBoard(3);
+            board.Set(figure);
+
+            var subject = GetSubject();
+            var moves = subject.GetMoves(board, Side.Black);
+
+            var figureMoves = Assert.Contains(figure, moves);
+            var expectedTopLeft = new MoveSequence(MoveStep.Move(0, 0), MoveStep.King());
+            var expectedBottomRight = new MoveSequence(MoveStep.Move(0, 2), MoveStep.King());
+            Assert.Contains(expectedTopLeft, figureMoves);
+            Assert.Contains(expectedBottomRight, figureMoves);
+            Assert.Equal(2, figureMoves.Length);
+        }
+
+        [Fact]
+        public void GetMoves_SingleKing_AllEmptySides()
         {
             /* . . . .
              * . . b .

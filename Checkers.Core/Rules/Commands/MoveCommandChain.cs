@@ -3,7 +3,7 @@ using Checkers.Core.Rules;
 using System;
 using System.Linq;
 
-namespace Checkers.Core.Rules
+namespace Checkers.Core.Rules.Commands
 {
     public class MoveCommandChain
     {
@@ -22,7 +22,7 @@ namespace Checkers.Core.Rules
         {
             switch (step.Type)
             {
-                case MoveStepTypes.Move: return new SimpleMoveCommand { Step = step };
+                case MoveStepTypes.Move: return new WalkMoveCommand { Step = step };
                 case MoveStepTypes.Jump: return new JumpMoveCommand { Step = step };
                 case MoveStepTypes.PromoteKing: return new PromoteKingMoveCommand { Step = step };
                 default:

@@ -1,5 +1,6 @@
 ﻿using Checkers.Core;
 using Checkers.Core.Board;
+using Checkers.Core.Bot;
 using Checkers.Core.Game;
 using Checkers.Core.Rules;
 using System;
@@ -40,23 +41,33 @@ namespace Checkers.WPF
             InitializeGame();
             _availableMoves = new ObservableCollection<MovesModel>();
             lstMoves.ItemsSource = AvailableMoves;
+            GameField.DataContext = this;
         }
 
         private void InitializeGame()
         {
-            game = new Game(new EnglishDraughtsRules(), new DraughtsBorderBuilder());
+            var rules = new EnglishDraughtsRules();
+            var boardBuilder = new DraughtsBorderBuilder();
+            var boardScoring = new TrivialBoardScoring();
+            var ai = new MiniMaxBot(rules, boardScoring);
+            game = new Game(rules, boardBuilder, ai);
             game.OnMoveCompleted += Game_OnMoveCompleted;
             RedrawBoard();
         }
-
-        private void Reset() => game.Start(PlayerSide);
 
         private void Game_OnMoveCompleted(object sender, EventArgs e) => RedrawBoard();
 
         private void RedrawBoard()
         {
+            if (game.Winner.HasValue)
+            {
+                //game over
+                MessageBox.Show($"Game Is Over, Winner Side: {game.Winner.Value}");
+                return;
+            }
+
             var cells = new ObservableCollection<Cell>();
-            var playerSide = PlayerSide == GameSide.Black ? Side.Black : Side.Red;
+            var playerSide = game.PlayerSide == GameSide.Black ? Side.Black : Side.Red;
             for (int i = 0; i < game.Board.Size; i++)
             {
                 for (int j = 0; j < game.Board.Size; j++)
@@ -69,11 +80,26 @@ namespace Checkers.WPF
             ChessBoard.ItemsSource = Cells;
             _availableMoves?.Clear();
             SelectedMovesModel = null;
-            AllAvailableMoves = game.GetValidMoves();
             SelectedFigure = Figure.Nop;
+            PlayerTurn = game.SideMoveNow == PlayerSide;
+
+            if (PlayerTurn)
+            {
+                AllAvailableMoves = game.GetValidMoves();
+            }
         }
 
-        private void Start(object sender, RoutedEventArgs e) => Reset();
+        private async void StartRed(object sender, RoutedEventArgs e)
+        {
+            PlayerSide = GameSide.Red;
+            await game.Start(GameSide.Red);
+        }
+
+        private async void StartBlack(object sender, RoutedEventArgs e)
+        {
+            PlayerSide = GameSide.Black;
+            await game.Start(GameSide.Black);
+        }
 
         #region Notifiable Properties
 
@@ -91,12 +117,20 @@ namespace Checkers.WPF
             set { _selectedFigure = value; OnPropertyChanged("SelectedFigure"); }
         }
 
+        private bool _playerTurn;
+        public bool PlayerTurn
+        {
+            get { return _playerTurn; }
+            set { _playerTurn = value; OnPropertyChanged("PlayerTurn"); OnPropertyChanged("BotTurn"); }
+        }
+
+        public bool BotTurn => !PlayerTurn;
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
         #endregion
 
         private void CellSelected(object sender, RoutedEventArgs e)
@@ -138,7 +172,31 @@ namespace Checkers.WPF
 
         private void MakeMove(object sender, RoutedEventArgs e)
         {
-            game.MakeMove(SelectedFigure, SelectedMovesModel.Index);
+            try
+            {
+                game.MakeMove(SelectedFigure, SelectedMovesModel.Index);
+            }
+            catch(GameException gameEx)
+            {
+                MessageBox.Show(gameEx.Message);
+            }
+        }
+
+        private async void MakeBotMove(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await game.MakeBotMove(Int32.Parse(txtSecPerMove.Text) * 1000);
+            }
+            catch (GameException gameEx)
+            {
+                MessageBox.Show(gameEx.Message);
+            }
+        }
+
+        private void Undo(object sender, RoutedEventArgs e)
+        {
+            if (!game.Undo()) MessageBox.Show("No moves to undo!");
         }
     }
 }

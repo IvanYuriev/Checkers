@@ -53,6 +53,12 @@ namespace Checkers.Core.Board
             return !IsBlack(bitPosition) && !IsRed(bitPosition);
         }
 
+        internal bool NoFigures(Side playerSide)
+        {
+            //TODO: NOT only Black and Red sides exist, FIXIT!
+            return playerSide == Side.Black ? _blackFigures == 0 : _redFigures == 0; 
+        }
+
         public void Set(Figure cell)
         {
             EnsureBounds(cell.Point);

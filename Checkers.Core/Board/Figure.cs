@@ -70,5 +70,15 @@ namespace Checkers.Core.Board
         public override bool Equals(object obj) => obj is Figure m && Equals(m);
 
         public bool Equals(Figure other) => Side == other.Side && Point == other.Point && IsKing == other.IsKing;
+
+        public static bool operator ==(Figure left, Figure right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Figure left, Figure right)
+        {
+            return !(left == right);
+        }
     }
 }

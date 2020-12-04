@@ -69,7 +69,7 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid x:Name="LayoutRoot" Background="LightCoral">
+    <Grid x:Name="LayoutRoot" Background="LightCoral" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150" />
             <ColumnDefinition Width="*" />
@@ -79,12 +79,16 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Vertical" Grid.Row="0" Background="Azure">
-            <Button x:Name="btnStart" Content="Start" Height="40" Click="Start" Margin="0, 0, 0, 5" />
-            <Button x:Name="btnUndo" Content="Undo" Height="40" />
+            <TextBlock Text="Sec per move: " />
+            <TextBox x:Name="txtSecPerMove" Text="5" />
+            <Button x:Name="btnStartRed" Content="Start as Red" Height="40" Click="StartRed" Margin="0, 0, 0, 5" Foreground="Red" />
+            <Button x:Name="btnStartBlack" Content="Start as Black" Height="40" Click="StartBlack" Margin="0, 0, 0, 5" />
+            <TextBlock />
+            <Button x:Name="btnUndo" Content="Undo" Height="40" Click="Undo" />
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Orientation="Horizontal" >
-            <Viewbox >
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <Viewbox x:Name="GameField" IsEnabled="{Binding PlayerTurn}">
                 <ItemsControl Name="ChessBoard" Background="AntiqueWhite">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -108,8 +112,9 @@
                     </ItemsControl.ItemContainerStyle>
                 </ItemsControl>
             </Viewbox>
-            <StackPanel>
-                <TextBlock Text="List of moves for selected figure:" FontWeight="Bold" />
+            <StackPanel Margin="10">
+                <Button x:Name="btnPushBot" Content="Let Bot Move" Height="40" Click="MakeBotMove" IsEnabled="{Binding BotTurn}" />
+                <TextBlock Text="List of moves for selected figure:" FontWeight="Bold" Margin="0,15,0,0" Foreground="White" />
                 <ItemsControl x:Name="lstMoves" DataContext="{Binding AvailableMoves}" Width="200" HorizontalContentAlignment="Center">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
