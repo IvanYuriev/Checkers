@@ -48,10 +48,10 @@ namespace Checkers.Core.Bot
                 StackIsNotEnough(depth)              ||
                 board.NoFigures(playerSide) ||
                 board.NoFigures(botSide))
+                //TODO: redesign border cases - draw game, 1-to-1 ending, player can't make any move
             {
                 var botScore = boardScoring.Evaluate(board, botSide);
                 var playerScore = boardScoring.Evaluate(board, playerSide);
-                //var score = isMaximizer ? botScore - playerScore : playerScore - botScore;
                 var score = botScore - playerScore;
                 return new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
             }
@@ -63,8 +63,22 @@ namespace Checkers.Core.Bot
 
                 var figures = rules.GetMoves(board, botSide);
                 if (TryGetFastPathMove(figures, lastMove, BOT_LOST_SCORE, out var m)) return m;
-                Parallel.ForEach(figures, (figure, state) =>
+
+                // =======================
+                // TODO: It doesn't make sense to use parallel with Alpha-Beta directly - what's the profit?!
+                // =======================
+
+                // Need to find more suitable cases to use multithreading (or actors)
+                // Best-first search with younger brother first could help
+                //  - how to estimate node to be able to use best-first search?
+                //  - try to utilize Checkers specific rules (board positioning, fairness??
+                //  - memoization - why should I recalculate the same moves again, expiration for cache?
+                // Other techniques instead of alpha-beta?
+                ///Parallel.ForEach(figures, (figure, state) =>
+                //{
+                foreach (var figure in figures)
                 {
+                    //TODO: it's better to have a flatten list of moves here (prioritised?)
                     for (int i = 0; i < figure.Value.Length; i++)
                     {
                         var move = figure.Value[i];
@@ -72,18 +86,21 @@ namespace Checkers.Core.Bot
                         var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
                         var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
                         currentMove.Score = botMove.Score;
-                        lock (locker)
-                        {
+                        //lock (locker)
+                        //{
                             if (botMove.Score > bestScore)
                             {
                                 bestScore = botMove.Score;
                                 bestMove = currentMove;
                             }
                             alpha = Math.Max(alpha, bestScore);
-                            if (alpha >= beta) state.Break(); //TODO: think about it!
-                        }
+                            //if (alpha >= beta) state.Break(); //TODO: think about it!
+                            if (alpha >= beta) break;
+                        //}
                     }
-                });
+                    if (alpha >= beta) break; //TODO: think about it!
+                }
+                //});
                 return bestMove;
             }
             else //minimizer
@@ -102,7 +119,7 @@ namespace Checkers.Core.Bot
                         var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
                         var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
                         currentMove.Score = botMove.Score;
-                        //THREADING!
+
                         if (botMove.Score < bestScore)
                         {
                             bestScore = botMove.Score;
