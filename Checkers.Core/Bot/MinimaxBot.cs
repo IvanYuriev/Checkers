@@ -1,21 +1,18 @@
 ﻿using Checkers.Core.Board;
-using Checkers.Core.Game;
 using Checkers.Core.Rules;
 using Checkers.Core.Rules.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Checkers.Core.Bot
 {
     public class MiniMaxBot : IBot
     {
-        private readonly IRules rules;
-        private readonly IBoardScoring boardScoring;
+        private readonly IRules _rules;
+        private readonly IBoardScoring _boardScoring;
         private Side botSide;
         private Side playerSide;
         private CancellationToken cancellation;
@@ -27,128 +24,87 @@ namespace Checkers.Core.Bot
 
         public MiniMaxBot(IRules rules, IBoardScoring boardScoring)
         {
-            this.rules = rules;
-            this.boardScoring = boardScoring;
+            _rules = rules;
+            _boardScoring = boardScoring;
         }
+
+        //HOWTO: make it possible to visualize search progress - let WPF to see each State and decisions?
 
         public BotMove FindBestMove(SquareBoard board, Side botSide, CancellationToken cancellation)
         {
             this.botSide = botSide;
             this.playerSide = SideUtil.Opposite(botSide);
             this.cancellation = cancellation;
-            var lastMove = new BotMove { Figure = Figure.Nop, MoveIndex = -1 };
-            var bestMove = AlphaBeta(board, 0, lastMove, true, Int32.MinValue, Int32.MaxValue);
+
+            return Negamax(board, MAX_DEPTH, Int32.MinValue, Int32.MaxValue, botSide);
+        }
+
+
+        // NegaMax algorithm with alpha/beta, source: https://en.wikipedia.org/wiki/Negamax
+        //TODO: append transposition tables
+        //TODO: append parallel with cancellation for alpha/beta logic
+        private BotMove Negamax(SquareBoard board, int depth, int alpha, int beta, Side side)
+        {
+            if (!CanSearchDeeper(ref board, depth))
+            {
+                return BotMove.Empty(Estimate(ref board));
+            }
+
+            var moves = GetOrderedMoves(board, side); // ref board?
+            // hot-path is needed here?
+            BotMove bestMove = default;
+            foreach (var move in moves)
+            {
+                var score = -Negamax(move.Board, depth - 1, -beta, -alpha, SideUtil.Opposite(side)).Score;
+                if (score > bestMove.Score)
+                {
+                    bestMove = new BotMove(move.Figure, move.SequenceIndex, score);
+                }
+                alpha = Math.Max(alpha, bestMove.Score);
+                if (alpha >= beta) break;
+            }
             return bestMove;
         }
 
-        private BotMove AlphaBeta(SquareBoard board, int depth, BotMove lastMove, bool isMaximizer, int alpha, int beta)
+        private IEnumerable<Move> GetOrderedMoves(SquareBoard board, Side side)
         {
-            if (cancellation.IsCancellationRequested ||
-                depth > MAX_DEPTH ||
-                StackIsNotEnough(depth)              ||
-                board.NoFigures(playerSide) ||
-                board.NoFigures(botSide))
-                //TODO: redesign border cases - draw game, 1-to-1 ending, player can't make any move
+            var moves = _rules.GetMoves(board, side);
+            foreach(var figureMove in moves)
             {
-                var botScore = boardScoring.Evaluate(board, botSide);
-                var playerScore = boardScoring.Evaluate(board, playerSide);
-                var score = botScore - playerScore;
-                return new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
-            }
-
-            if (isMaximizer)
-            {
-                int bestScore = int.MinValue;
-                var bestMove = default(BotMove);
-
-                var figures = rules.GetMoves(board, botSide);
-                if (TryGetFastPathMove(figures, lastMove, BOT_LOST_SCORE, out var m)) return m;
-
-                // =======================
-                // TODO: It doesn't make sense to use parallel with Alpha-Beta directly - what's the profit?!
-                // =======================
-
-                // Need to find more suitable cases to use multithreading (or actors)
-                // Best-first search with younger brother first could help
-                //  - how to estimate node to be able to use best-first search?
-                //  - try to utilize Checkers specific rules (board positioning, fairness??
-                //  - memoization - why should I recalculate the same moves again, expiration for cache?
-                // Other techniques instead of alpha-beta?
-                ///Parallel.ForEach(figures, (figure, state) =>
-                //{
-                foreach (var figure in figures)
+                for(var i = 0; i < figureMove.Value.Length; i++)
                 {
-                    //TODO: it's better to have a flatten list of moves here (prioritised?)
-                    for (int i = 0; i < figure.Value.Length; i++)
-                    {
-                        var move = figure.Value[i];
-                        var boardAfterMove = new MoveCommandChain(figure.Key, board, move).Execute();
-                        var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
-                        var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
-                        currentMove.Score = botMove.Score;
-                        //lock (locker)
-                        //{
-                            if (botMove.Score > bestScore)
-                            {
-                                bestScore = botMove.Score;
-                                bestMove = currentMove;
-                            }
-                            alpha = Math.Max(alpha, bestScore);
-                            //if (alpha >= beta) state.Break(); //TODO: think about it!
-                            if (alpha >= beta) break;
-                        //}
-                    }
-                    if (alpha >= beta) break; //TODO: think about it!
+                    var boardAfterMove = new MoveCommandChain(figureMove.Key, board, figureMove.Value[i]).Execute();
+                    yield return new Move(figureMove.Key, i, boardAfterMove);
                 }
-                //});
-                return bestMove;
             }
-            else //minimizer
-            {
-                int bestScore = int.MaxValue;
-                var bestMove = default(BotMove);
+        }
 
-                var figures = rules.GetMoves(board, botSide);
-                if (TryGetFastPathMove(figures, lastMove, PLAYER_LOST_SCORE, out var m)) return m;
-                foreach (var figure in figures)
-                {
-                    for (int i = 0; i < figure.Value.Length; i++)
-                    {
-                        var move = figure.Value[i];
-                        var boardAfterMove = new MoveCommandChain(figure.Key, board, move).Execute();
-                        var currentMove = new BotMove { Figure = figure.Key, MoveIndex = i };
-                        var botMove = AlphaBeta(boardAfterMove, depth + 1, currentMove, !isMaximizer, alpha, beta);
-                        currentMove.Score = botMove.Score;
+        private bool CanSearchDeeper(ref SquareBoard board, int depth)
+        {
+            return depth > 0 && StackIsNotEnough(depth) && !board.NoFigures(botSide) && !board.NoFigures(playerSide);
+        }
 
-                        if (botMove.Score < bestScore)
-                        {
-                            bestScore = botMove.Score;
-                            bestMove = currentMove;
-                        }
-                        beta = Math.Min(beta, bestScore);
-                        if (alpha >= beta)
-                            break;
-                    }
-                    if (alpha >= beta)
-                        break;
-                }
-                return bestMove;
-            }
+        private int Estimate(ref SquareBoard board)
+        {
+            // score > 0 - bot has better board
+            // score < 0 - player has better board
+            //TODO: append position evaluation - corners and horizontal borders are better
+            return _boardScoring.Evaluate(board, botSide) - _boardScoring.Evaluate(board, playerSide);
         }
 
         private static bool TryGetFastPathMove(IDictionary<Figure, MoveSequence[]> figures, BotMove lastMove, int score, out BotMove move)
         {
             move = default;
-            if (figures.Count == 0) //no figures to make move - BOT LOST!
-            {
-                move = new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
-                return true;
-            }
-            if (figures.Count == 1 && figures.First().Value.Length == 1)
-            {
-                move = new BotMove { Figure = figures.First().Key, MoveIndex = 0 };
-                return true;
-            }
+            //if (figures.Count == 0) //no figures to make move - BOT LOST!
+            //{
+            //    move = new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
+            //    return true;
+            //}
+            //if (figures.Count == 1 && figures.First().Value.Length == 1)
+            //{
+            //    move = new BotMove { Figure = figures.First().Key, MoveIndex = 0 };
+            //    return true;
+            //}
             return false;
         }
 
@@ -166,6 +122,20 @@ namespace Checkers.Core.Bot
                 }
             }
             return false;
+        }
+
+        private struct Move
+        {
+            public Figure Figure { get; private set; }
+            public int SequenceIndex { get; private set; }
+            public SquareBoard Board { get; private set; }
+
+            public Move(Figure figure, int sequenceIndex, SquareBoard board)
+            {
+                Figure = figure;
+                SequenceIndex = sequenceIndex;
+                Board = board;
+            }
         }
     }
 }
