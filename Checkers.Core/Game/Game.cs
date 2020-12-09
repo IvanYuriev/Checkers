@@ -99,11 +99,11 @@ namespace Checkers.Core.Game
             var currentMoves = _rulesProvider.GetMoves(Board, CoreSideMoveNow);
             if (!currentMoves.TryGetValue(botMove.Figure, out var figureMoves))
                 throw new GameException($"Can't find bot figure: {botMove.Figure}");
-            if (botMove.MoveIndex >= figureMoves.Length)
-                throw new GameException($"Can't find bot figure move sequence index: {botMove.MoveIndex}; {botMove.Figure}");
+            if (botMove.SequenceIndex >= figureMoves.Length)
+                throw new GameException($"Can't find bot figure move sequence index: {botMove.SequenceIndex}; {botMove.Figure}");
 
             UpdateAvailableMoves();
-            MakeMove(botMove.Figure, botMove.MoveIndex);
+            MakeMove(botMove.Figure, botMove.SequenceIndex);
         }
 
         private bool GameIsOver()
