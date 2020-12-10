@@ -143,10 +143,10 @@ namespace Checkers.Core.Board
                             result.Append('.');
                             break;
                         case Side.Black:
-                            if (cell.IsKing) result.Append('β'); else result.Append('b');
+                            if (cell.IsKing) result.Append('B'); else result.Append('b');
                             break;
                         case Side.Red:
-                            if (cell.IsKing) result.Append('ρ'); else result.Append('r');
+                            if (cell.IsKing) result.Append('R'); else result.Append('r');
                             break;
                     }
                     result.Append(' ');

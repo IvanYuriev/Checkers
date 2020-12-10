@@ -12,8 +12,7 @@ namespace Checkers.Core.Bot
             for (int i = 0; i < figures.Length; i++)
             {
                 var figure = figures[i];
-                score += figure.IsKing ? 5 : 1;
-                if (figure.Point.Col == 0 || figure.Point.Col == size) score++;
+                score += figure.IsKing ? 3 : 1;
             }
             return score;
         }
