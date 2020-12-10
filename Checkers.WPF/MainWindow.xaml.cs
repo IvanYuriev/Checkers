@@ -50,7 +50,7 @@ namespace Checkers.WPF
             var rules = new EnglishDraughtsRules();
             var boardBuilder = new DraughtsBorderBuilder();
             var boardScoring = new TrivialBoardScoring();
-            var ai = new MiniMaxBot(rules, boardScoring);
+            var ai = new NegaMaxBot(rules, boardScoring, null);
             game = new Game(rules, boardBuilder, ai);
             game.OnMoveCompleted += Game_OnMoveCompleted;
             RedrawBoard();
