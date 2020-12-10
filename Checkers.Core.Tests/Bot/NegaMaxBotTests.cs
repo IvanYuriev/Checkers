@@ -75,28 +75,6 @@ namespace Checkers.Core.Tests.Bot
             Assert.Equal(1, move.SequenceIndex);
         }
 
-        [Fact]
-        public void FindBestMove_ChooseToStrikeKing()
-        {
-            /*     0 1 2 3 4
-                 0 . . . . .
-                 1 . r . . .   
-                 2 . . . . .
-                 3 . b . b .
-                 4 . . . . .   */
-            var board = new SquareBoard(5);
-            board.Set(Figure.CreateSimple(1, 1, Side.Red));
-            board.Set(Figure.CreateKing(1, 3, Side.Red));
-            board.Set(Figure.CreateSimple(3, 1, Side.Red));
-            board.Set(Figure.CreateSimple(4, 0, Side.Black));
-
-            var subject = GetSubject();
-            var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, Options(maxDepth: 2));
-
-            Assert.Equal(Figure.CreateSimple(4, 0, Side.Black), move.Figure);
-            Assert.Equal(1, move.SequenceIndex);
-        }
-
         private IBot GetSubject()
         {
             return new NegaMaxBot(new EnglishDraughtsRules(), new TrivialBoardScoring(), _logger);

@@ -1,6 +1,7 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Game;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -11,6 +12,26 @@ namespace Checkers.Core.Rules
         private SquareBoard board;
 
         public GameSide FirstMoveSide => GameSide.Red;
+
+        private static Func<Point, int, Point>[] KingDirections = new[]
+        {
+            Direction.BottomLeft,
+            Direction.BottomRight,
+            Direction.UpperLeft,
+            Direction.UpperRight,
+        };
+
+        private static Func<Point, int, Point>[] BlackDirections = new[]
+        {
+            Direction.UpperLeft,
+            Direction.UpperRight
+        };
+
+        private static Func<Point, int, Point>[] RedDirections = new[]
+        {
+            Direction.BottomLeft,
+            Direction.BottomRight
+        };
 
         public bool GameIsOver(SquareBoard board)
         {
@@ -37,6 +58,9 @@ namespace Checkers.Core.Rules
                     continue;
                 }
 
+                // jump has a priority - no need to calculate walk moves if jump exists
+                if (jumpMoves.Count > 0) continue;
+
                 var simple = new List<MoveSequence>(4);
                 BuildSimpleMoves(figure, simple);
                 if (simple.Count > 0) //no strike moves! Let's append a simple ones
@@ -53,7 +77,7 @@ namespace Checkers.Core.Rules
 
         private void BuildSimpleMoves(Figure figure, List<MoveSequence> simpleMoves)
         {
-            foreach (var direction in figure.Directions)
+            foreach (var direction in GetDirections(figure))
             {
                 var jump = GetJumpPoint(figure, direction, out var neighbour);
                 if (jump == Point.Nop && neighbour.Side == Side.Empty)
@@ -76,9 +100,8 @@ namespace Checkers.Core.Rules
             }
 
             var endOfSequence = true;
-            for (int i = 0; i < figure.Directions.Length; i++)
+            foreach (var direction in GetDirections(figure))
             {
-                var direction = figure.Directions[i];
                 var position = GetJumpPoint(figure, direction, out var neighbour);
                 if (position == Point.Nop) continue;
                 if (sequence.Contains(position)) continue;
@@ -102,16 +125,24 @@ namespace Checkers.Core.Rules
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Point GetJumpPoint(Figure figure, Func<int, Point> direction, out Figure neighbour)
+        private Point GetJumpPoint(Figure figure, Func<Point, int, Point> direction, out Figure neighbour)
         {
-            neighbour = board.Get(direction(1));
+            neighbour = board.Get(direction(figure.Point, 1));
             if (neighbour.Side == SideUtil.Opposite(figure.Side))
             {
-                var doubleStep = direction(2);
+                var doubleStep = direction(figure.Point, 2);
                 if (board.IsEmpty(doubleStep))
                     return doubleStep;
             }
             return Point.Nop;
+        }
+
+        private static Func<Point, int, Point>[] GetDirections(Figure figure)
+        {
+            if (figure.IsKing) return KingDirections;
+            else if (figure.Side == Side.Red) return RedDirections;
+            else if (figure.Side == Side.Black) return BlackDirections;
+            else throw new NotImplementedException();
         }
     }
 
