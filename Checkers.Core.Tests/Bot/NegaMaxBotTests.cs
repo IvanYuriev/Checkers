@@ -1,8 +1,11 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Bot;
+using Checkers.Core.Game;
 using Checkers.Core.Rules;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Xunit;
@@ -12,12 +15,12 @@ namespace Checkers.Core.Tests.Bot
 {
     public partial class NegaMaxBotTests
     {
-        private readonly ITestOutputHelper testOutput;
+        private readonly ITestOutputHelper _testOutput;
         private ILogger<NegaMaxBot> _logger;
 
         public NegaMaxBotTests(ITestOutputHelper testOutput)
         {
-            this.testOutput = testOutput;
+            this._testOutput = testOutput;
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(new XunitLoggerProvider(testOutput));
             _logger = loggerFactory.CreateLogger<NegaMaxBot>();
@@ -87,7 +90,7 @@ namespace Checkers.Core.Tests.Bot
                     subject.FindBestMove(board, Side.Red, CancellationToken.None, options))
                 .ToList();
 
-            moves.ForEach(x => testOutput.WriteLine(x.ToString()));
+            moves.ForEach(x => _testOutput.WriteLine(x.ToString()));
             var groupingMove = Assert.Single(moves.GroupBy(x => x)); //all move are the same!
             Assert.Equal(0, groupingMove.Key.SequenceIndex);
         }
@@ -123,7 +126,13 @@ namespace Checkers.Core.Tests.Bot
         [Fact]
         public void FindBestMove_SingleMoveExists_FastPathWithNoEvaluation()
         {
-            var board = new SquareBoard(6);
+            /*    0 1 2 3 4
+                0 . . . . .
+                1 . R . . .   
+                2 . . B . B
+                3 . . . . .
+                4 . . . . .   */
+            var board = new SquareBoard(5);
             board.Set(Figure.CreateKing(2, 2, Side.Black));
             board.Set(Figure.CreateKing(2, 4, Side.Black));
             board.Set(Figure.CreateKing(1, 1, Side.Red));
@@ -132,7 +141,7 @@ namespace Checkers.Core.Tests.Bot
             var options = Options(maxParallel: 2, maxDepth: 3);
 
             var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, options);
-            Assert.Equal(1, subject.TotalMovesEstimated);
+            Assert.Equal(0, subject.TotalMovesEstimated);
             Assert.Equal(Point.At(2, 2), move.Figure.Point);
             Assert.Equal(0, move.SequenceIndex);
         }
@@ -166,6 +175,30 @@ namespace Checkers.Core.Tests.Bot
 
             subject.FindBestMove(board, Side.Black, CancellationToken.None, Options(maxParallel: 4, maxDepth: 2));
             Assert.Equal(4 + 3 + 1 + 1 + 3, subject.TotalMovesEstimated);
+        }
+
+        [Fact]
+        [Trait("Category", "TimeoutTest")]
+        public void FindBestMove_ProcessingCancellation_ExtraTimeLessThanSeccond()
+        {
+            var boardBuilder = new DraughtsBoardBuilder();
+            var board = boardBuilder.Build();
+            var turnTimeLimitMs = 3000;
+
+            var subject = GetSubject();
+            var results = new List<(int depth, long timeMs, int estimations)>();
+            for(int depth = 4; depth <= 30; depth += 4)
+            {
+                var watch = Stopwatch.StartNew();
+                var cts = new CancellationTokenSource(turnTimeLimitMs);
+                subject.FindBestMove(board, Side.Black, cts.Token, Options(maxParallel: 4, maxDepth: depth, isDebug: false));
+                watch.Stop();
+                results.Add((depth, watch.ElapsedMilliseconds, subject.TotalMovesEstimated));
+            }
+
+            results.ForEach(x => _testOutput.WriteLine(x.ToString()));
+            var maxTimeMs = results.Average(x => x.timeMs);
+            Assert.InRange(maxTimeMs - turnTimeLimitMs, Int32.MinValue, 1000);
         }
 
         private IBot GetSubject(IRules rules = default, IBoardScoring scoring = default)
