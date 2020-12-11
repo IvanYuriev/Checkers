@@ -1,13 +1,10 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Bot;
 using Checkers.Core.Rules;
-using Checkers.Core.Rules.Commands;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -121,6 +118,54 @@ namespace Checkers.Core.Tests.Bot
             scoringMock.Reset();
             options.AllowPrunning = false;
             Assert.Throws<IndexOutOfRangeException>(() => subject.FindBestMove(board, Side.Black, CancellationToken.None, options));
+        }
+
+        [Fact]
+        public void FindBestMove_SingleMoveExists_FastPathWithNoEvaluation()
+        {
+            var board = new SquareBoard(6);
+            board.Set(Figure.CreateKing(2, 2, Side.Black));
+            board.Set(Figure.CreateKing(2, 4, Side.Black));
+            board.Set(Figure.CreateKing(1, 1, Side.Red));
+
+            var subject = GetSubject();
+            var options = Options(maxParallel: 2, maxDepth: 3);
+
+            var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, options);
+            Assert.Equal(1, subject.TotalMovesEstimated);
+            Assert.Equal(Point.At(2, 2), move.Figure.Point);
+            Assert.Equal(0, move.SequenceIndex);
+        }
+
+        [Fact]
+        public void FindBestMove_ParallelProcessing_EstimationsCheckSum()
+        {
+            /*     0 1 2 3 4
+                 0 r . r . r
+                 1 . r . r .   
+                 2 . . . . .
+                 3 . b . b .
+                 4 b . b . b   */
+            var board = new SquareBoard(5);
+            board.Set(Figure.CreateSimple(0, 0, Side.Red));
+            board.Set(Figure.CreateSimple(0, 2, Side.Red));
+            board.Set(Figure.CreateSimple(0, 4, Side.Red));
+            board.Set(Figure.CreateSimple(1, 1, Side.Red));
+            board.Set(Figure.CreateSimple(1, 3, Side.Red));
+
+            board.Set(Figure.CreateSimple(3, 1, Side.Black));
+            board.Set(Figure.CreateSimple(3, 3, Side.Black));
+            board.Set(Figure.CreateSimple(4, 0, Side.Black));
+            board.Set(Figure.CreateSimple(4, 2, Side.Black));
+            board.Set(Figure.CreateSimple(4, 4, Side.Black));
+
+            var subject = GetSubject();
+
+            subject.FindBestMove(board, Side.Black, CancellationToken.None, Options(maxParallel: 4, maxDepth: 1));
+            Assert.Equal(4, subject.TotalMovesEstimated);
+
+            subject.FindBestMove(board, Side.Black, CancellationToken.None, Options(maxParallel: 4, maxDepth: 2));
+            Assert.Equal(4 + 3 + 1 + 1 + 3, subject.TotalMovesEstimated);
         }
 
         private IBot GetSubject(IRules rules = default, IBoardScoring scoring = default)

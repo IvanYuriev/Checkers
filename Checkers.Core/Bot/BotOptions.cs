@@ -6,7 +6,7 @@ namespace Checkers.Core.Bot
     {
         public class BotOptions
         {
-            public int MaxDepth { get; set; } = 10;
+            public int MaxDepth { get; set; } = 12;
             public bool AllowPrunning { get; set; } = true;
             public bool IsDebug { get; set; } = false;
             public int DegreeOfParallelism { get; set; } = Environment.ProcessorCount;

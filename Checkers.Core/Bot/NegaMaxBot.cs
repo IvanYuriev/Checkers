@@ -23,13 +23,19 @@ namespace Checkers.Core.Bot
 
         private object locker = new object();
         private int _runningWorkersCount = 0;
-        
+        private int _totalMovesEstimated;
 
         public NegaMaxBot(IRules rules, IBoardScoring boardScoring, ILogger<NegaMaxBot> logger)
         {
             _rules = rules;
             _boardScoring = boardScoring;
             _logger = logger;
+        }
+
+        public int TotalMovesEstimated
+        {
+            get { return _totalMovesEstimated; }
+            private set { _totalMovesEstimated = value; }
         }
 
         //HOWTO: make it possible to visualize search progress - let WPF to see each State and decisions?
@@ -44,10 +50,8 @@ namespace Checkers.Core.Bot
             return Negamax(board, this.options.MaxDepth, Int32.MinValue + 1, Int32.MaxValue, botSide, CancellationToken.None);
         }
 
-
         // NegaMax algorithm with alpha/beta, source: https://en.wikipedia.org/wiki/Negamax
         //TODO: append transposition tables
-        //TODO: append parallel with cancellation for alpha/beta logic
         private BotMove Negamax(SquareBoard board, int depth, int alpha, int beta, Side side, CancellationToken branchToken)
         {
             if (cancellation.IsCancellationRequested ||
@@ -95,10 +99,8 @@ namespace Checkers.Core.Bot
 
             Task.WaitAll(workers.ToArray());
 
-            if (noMoves)
-            {
+            if (noMoves) 
                 return BotMove.Empty(Estimate(board));
-            }
 
             return bestMove;
 
@@ -107,7 +109,7 @@ namespace Checkers.Core.Bot
                 if (options.IsDebug) Log("before", board, side, state, bestMove.Score, depth, alpha, beta);
                 var boardAfterMove = new MoveCommandChain(state.Figure, state.Board, state.MoveSequence).Execute();
                 var score = -Negamax(boardAfterMove, depth - 1, -beta, -alpha, SideUtil.Opposite(side), cts.Token).Score;
-                //var shouldPrun = false;
+                var shouldPrun = false;
                 lock (locker)
                 {
                     if (score > bestMove.Score)
@@ -115,10 +117,11 @@ namespace Checkers.Core.Bot
                         bestMove = new BotMove(state.Figure, state.SequenceIndex, score);
                     }
                     alpha = Math.Max(alpha, bestMove.Score);
-                    //shouldPrun = alpha >= beta;
-                    if (options.AllowPrunning && alpha >= beta) cts.Cancel();
+                    //let's move cts.Cancel out of the lock scope
+                    shouldPrun = options.AllowPrunning && alpha >= beta; 
                 }
                 if (options.IsDebug) Log("after", board, side, state, score, depth, alpha, beta);
+                if (shouldPrun) cts.Cancel();
             }
         }
 
@@ -150,6 +153,7 @@ namespace Checkers.Core.Bot
 
         private int Estimate(SquareBoard board)
         {
+            Interlocked.Increment(ref _totalMovesEstimated);
             // score > 0 - bot has better board
             // score < 0 - player has better board
             //TODO: append position evaluation - corners and horizontal borders are better
@@ -157,22 +161,6 @@ namespace Checkers.Core.Bot
             if (board.NoFigures(playerSide)) return 1000;
 
             return _boardScoring.Evaluate(board, botSide);
-        }
-
-        private static bool TryGetFastPathMove(IDictionary<Figure, MoveSequence[]> figures, BotMove lastMove, int score, out BotMove move)
-        {
-            move = default;
-            //if (figures.Count == 0) //no figures to make move - BOT LOST!
-            //{
-            //    move = new BotMove { Score = score, Figure = lastMove.Figure, MoveIndex = lastMove.MoveIndex };
-            //    return true;
-            //}
-            //if (figures.Count == 1 && figures.First().Value.Length == 1)
-            //{
-            //    move = new BotMove { Figure = figures.First().Key, MoveIndex = 0 };
-            //    return true;
-            //}
-            return false;
         }
 
         private bool StackIsNotEnough(int depth)
