@@ -12,6 +12,10 @@ namespace Checkers.Core.Bot
             return score;
         }
 
+        //TODO: borders should influence score - as a better positions for a figure
+        //TODO: terminal positions scoring
+        //TODO: is it possible to estimate draw game?
+
         private int SideScore(Figure[] figures)
         {
             var score = 0;
