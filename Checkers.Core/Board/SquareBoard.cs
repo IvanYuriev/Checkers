@@ -9,9 +9,6 @@ using System.Threading.Tasks;
 
 namespace Checkers.Core.Board
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public struct SquareBoard
     {
         //bit field for board of figures, each bit encode the state of cell on the board:

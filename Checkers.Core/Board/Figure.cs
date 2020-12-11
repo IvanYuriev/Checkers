@@ -26,8 +26,9 @@ namespace Checkers.Core.Board
 
         public override string ToString()
         {
-            var isKingMark = IsKing ? "*" : "";
-            return $"{Point}:{Side}{isKingMark}";
+            var sideChar = Side.ToString()[0];
+            if (IsKing) sideChar = Char.ToUpper(sideChar);
+            return $"{sideChar}{Point}";
         }
 
         public override int GetHashCode() => (Point, Side).GetHashCode();

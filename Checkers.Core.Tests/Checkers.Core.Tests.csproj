@@ -101,6 +101,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Board\SquareBoardTests.cs" />
+    <Compile Include="Bot\MockRules.cs" />
+    <Compile Include="Bot\MockScoring.cs" />
     <Compile Include="Bot\NegaMaxBotTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rules\EnglishDraughtsRulesTests.cs" />

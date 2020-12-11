@@ -6,9 +6,15 @@ namespace Checkers.Core.Bot
     {
         public int Evaluate(SquareBoard board, Side side)
         {
+            var enemySide = SideUtil.Opposite(side);
+
+            var score = SideScore(board.GetAll(side)) - SideScore(board.GetAll(enemySide));
+            return score;
+        }
+
+        private int SideScore(Figure[] figures)
+        {
             var score = 0;
-            var figures = board.GetAll(side);
-            var size = board.Size - 1;
             for (int i = 0; i < figures.Length; i++)
             {
                 var figure = figures[i];

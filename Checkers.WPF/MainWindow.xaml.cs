@@ -48,7 +48,7 @@ namespace Checkers.WPF
         private void InitializeGame()
         {
             var rules = new EnglishDraughtsRules();
-            var boardBuilder = new DraughtsBorderBuilder();
+            var boardBuilder = new DraughtsBoardBuilder(); //new PresetBorderBuilder();//
             var boardScoring = new TrivialBoardScoring();
             var ai = new NegaMaxBot(rules, boardScoring, null);
             game = new Game(rules, boardBuilder, ai);

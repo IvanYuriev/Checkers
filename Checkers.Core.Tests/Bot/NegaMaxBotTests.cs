@@ -1,9 +1,9 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Bot;
 using Checkers.Core.Rules;
+using Checkers.Core.Rules.Commands;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Checkers.Core.Tests.Bot
 {
-    public class NegaMaxBotTests
+    public partial class NegaMaxBotTests
     {
         private readonly ITestOutputHelper testOutput;
         private ILogger<NegaMaxBot> _logger;
@@ -34,7 +34,7 @@ namespace Checkers.Core.Tests.Bot
         }
 
         [Fact]
-        public void FindBestMove_PredictEnemyStrike_MoveAnotherFigure()
+        public void FindBestMove_AviodEnemyStrike_TryMoveAnotherFigure()
         {
             /*     0 1 2 3 4
              *   0 . . . . r
@@ -75,33 +75,64 @@ namespace Checkers.Core.Tests.Bot
             Assert.Equal(1, move.SequenceIndex);
         }
 
-        private IBot GetSubject()
+        [Fact(Skip = "Depends on parallelism factor")]
+        public void FindBestMove_RunTheSameBoard_ProduceTheSameResults()
         {
-            return new NegaMaxBot(new EnglishDraughtsRules(), new TrivialBoardScoring(), _logger);
+            var board = new SquareBoard(6);
+            board.Set(Figure.CreateKing(1, 0, Side.Black));
+            board.Set(Figure.CreateKing(1, 2, Side.Black));
+            board.Set(Figure.CreateKing(3, 0, Side.Red));
+
+            var subject = GetSubject();
+            var options = new NegaMaxBot.BotOptions { IsDebug = false, DegreeOfParallelism = 4, MaxDepth = 10, AllowPrunning = true };
+            var moves = Enumerable.Range(0, 50)
+                .Select(_ =>
+                    subject.FindBestMove(board, Side.Red, CancellationToken.None, options))
+                .ToList();
+
+            moves.ForEach(x => testOutput.WriteLine(x.ToString()));
+            var groupingMove = Assert.Single(moves.GroupBy(x => x)); //all move are the same!
+            Assert.Equal(0, groupingMove.Key.SequenceIndex);
         }
 
-        private NegaMaxBot.BotOptions Options(int maxParallel = 0, int maxDepth = 1)
+        [Fact]
+        public void FindBestMove_Pruning()
         {
-            return new NegaMaxBot.BotOptions { IsDebug = true, DegreeOfParallelism = maxParallel, MaxDepth = maxDepth };
+            var blackPiece = Figure.CreateKing(2, 2, Side.Black);
+            var redPiece = Figure.CreateKing(0, 0, Side.Red);
+            var board = new SquareBoard(3);
+            board.Set(blackPiece);
+            board.Set(redPiece);
+            
+            /*      b           MAX
+             *    /   \
+             *   r     r        MIN
+             *  / \   / x
+             * 2   4 -5 (any) 
+            */
+            var scoringMock = new MockScoring(2, 4, -5); //ABSENT value for the 4th scoring => should throw an Exception
+            var subject = GetSubject(new MockRules(blackPiece), scoringMock);
+            var options = Options(maxParallel: 0, maxDepth: 2);
+
+            options.AllowPrunning = true;
+            var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, options);
+            Assert.Equal(2, move.Score);
+
+            scoringMock.Reset();
+            options.AllowPrunning = false;
+            Assert.Throws<IndexOutOfRangeException>(() => subject.FindBestMove(board, Side.Black, CancellationToken.None, options));
         }
 
-        private static SquareBoard Board6x6Preset1()
+        private IBot GetSubject(IRules rules = default, IBoardScoring scoring = default)
         {
-            /* 0 1 2 3 4 5 6
-             0 . . . . . . .
-             1 r . . . . . .
-             2 . . . . . . .
-             3 b . . . b . .
-             4 . . . . . . .
-             5 . . . . . . . */
-            var board = new SquareBoard(7);
-            board.Set(Figure.CreateSimple(1, 1, Side.Red));
-            board.Set(Figure.CreateSimple(1, 3, Side.Red));
-            board.Set(Figure.CreateSimple(1, 5, Side.Red));
-            board.Set(Figure.CreateSimple(3, 5, Side.Red));
-            board.Set(Figure.CreateSimple(4, 6, Side.Black));
-            board.Set(Figure.CreateKing(2, 0, Side.Black));
-            return board;
+            if (rules == default) rules = new EnglishDraughtsRules();
+            if (scoring == default) scoring = new TrivialBoardScoring();
+            return new NegaMaxBot(rules, scoring, _logger);
+        }
+
+        private NegaMaxBot.BotOptions Options(bool isDebug = true,int maxParallel = 0, int maxDepth = 1)
+        {
+            return new NegaMaxBot.BotOptions { IsDebug = isDebug, DegreeOfParallelism = maxParallel, MaxDepth = maxDepth };
         }
     }
 }

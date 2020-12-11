@@ -55,8 +55,8 @@
     <Compile Include="Bot\IBot.cs" />
     <Compile Include="Bot\NegaMaxBot.cs" />
     <Compile Include="Bot\TrivialBoardScoring.cs" />
-    <Compile Include="Game\PresetBorderBuilder.cs" />
-    <Compile Include="Game\DraughtsBorderBuilder.cs" />
+    <Compile Include="Game\PresetBoardBuilder.cs" />
+    <Compile Include="Game\DraughtsBoardBuilder.cs" />
     <Compile Include="Game\Game.cs" />
     <Compile Include="Game\GameException.cs" />
     <Compile Include="Game\GameSide.cs" />
@@ -74,7 +74,6 @@
     <Compile Include="Rules\MoveStepTypes.cs" />
     <Compile Include="Board\SquareBoard.cs" />
     <Compile Include="Board\Figure.cs" />
-    <Compile Include="Board\ReadOnlyBoard.cs" />
     <Compile Include="Board\Point.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Board\Side.cs" />

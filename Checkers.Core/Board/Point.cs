@@ -50,7 +50,7 @@ namespace Checkers.Core.Board
 
         public override string ToString()
         {
-            return $"({Row,2}, {Col,2})";
+            return $"({Row}, {Col})";
         }
 
         public static bool operator ==(Point left, Point right)

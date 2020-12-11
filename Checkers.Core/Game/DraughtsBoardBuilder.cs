@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Checkers.Core.Game
 {
-    public class DraughtsBorderBuilder : IBoardBuilder
+    public class DraughtsBoardBuilder : IBoardBuilder
     {
         public SquareBoard Build()
         {
