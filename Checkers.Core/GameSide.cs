@@ -1,4 +1,4 @@
-﻿namespace Checkers.Core.Game
+﻿namespace Checkers.Core
 {
     public enum GameSide : byte { Black, Red }
 

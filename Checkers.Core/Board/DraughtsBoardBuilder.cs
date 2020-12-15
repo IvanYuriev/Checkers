@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Checkers.Core.Game
+namespace Checkers.Core.Board
 {
     public class DraughtsBoardBuilder : IBoardBuilder
     {

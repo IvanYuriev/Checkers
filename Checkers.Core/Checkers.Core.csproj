@@ -51,17 +51,28 @@
     <Compile Include="Board\SideUtil.cs" />
     <Compile Include="Bot\BotMove.cs" />
     <Compile Include="Bot\BotOptions.cs" />
+    <Compile Include="Bot\BotPlayer.cs" />
     <Compile Include="Bot\IBoardScoring.cs" />
     <Compile Include="Bot\IBot.cs" />
     <Compile Include="Bot\NegaMaxBot.cs" />
     <Compile Include="Bot\TrivialBoardScoring.cs" />
-    <Compile Include="Game\PresetBoardBuilder.cs" />
-    <Compile Include="Game\DraughtsBoardBuilder.cs" />
-    <Compile Include="Game\Game.cs" />
-    <Compile Include="Game\GameException.cs" />
-    <Compile Include="Game\GameSide.cs" />
-    <Compile Include="Game\History.cs" />
-    <Compile Include="Game\IBoardBuilder.cs" />
+    <Compile Include="Extensions\RulesExtensions.cs" />
+    <Compile Include="GameMove\StopGameMove.cs" />
+    <Compile Include="GameStatistics.cs" />
+    <Compile Include="GameStatus.cs" />
+    <Compile Include="GameMove\IGameMove.cs" />
+    <Compile Include="IGameStatistics.cs" />
+    <Compile Include="IPlayer.cs" />
+    <Compile Include="IStatisticsFormatter.cs" />
+    <Compile Include="Board\PresetBoardBuilder.cs" />
+    <Compile Include="Board\DraughtsBoardBuilder.cs" />
+    <Compile Include="Game.cs" />
+    <Compile Include="GameException.cs" />
+    <Compile Include="GameSide.cs" />
+    <Compile Include="History.cs" />
+    <Compile Include="Board\IBoardBuilder.cs" />
+    <Compile Include="GameMove\WalkGameMove.cs" />
+    <Compile Include="GameMove\YieldGameMove.cs" />
     <Compile Include="Rules\Commands\IMoveCommand.cs" />
     <Compile Include="Rules\Commands\JumpMoveCommand.cs" />
     <Compile Include="Rules\Commands\MoveCommandChain.cs" />
@@ -81,5 +92,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

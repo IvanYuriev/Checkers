@@ -1,5 +1,4 @@
 ﻿using Checkers.Core.Board;
-using Checkers.Core.Game;
 using System.Collections.Generic;
 
 namespace Checkers.Core.Rules

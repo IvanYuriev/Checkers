@@ -1,6 +1,5 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Bot;
-using Checkers.Core.Game;
 using Checkers.Core.Rules;
 using Microsoft.Extensions.Logging;
 using System;
@@ -72,7 +71,7 @@ namespace Checkers.Core.Tests.Bot
             var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, Options(maxDepth: 2));
 
             Assert.Equal(Figure.CreateSimple(4, 0, Side.Black), move.Figure);
-            Assert.Equal(1, move.SequenceIndex);
+            Assert.Equal(new MoveSequence(MoveStep.Jump(2, 2), MoveStep.Jump(0, 4), MoveStep.King()), move.Sequence);
         }
 
         [Fact(Skip = "Depends on parallelism factor")]
@@ -92,7 +91,7 @@ namespace Checkers.Core.Tests.Bot
 
             moves.ForEach(x => _testOutput.WriteLine(x.ToString()));
             var groupingMove = Assert.Single(moves.GroupBy(x => x)); //all move are the same!
-            Assert.Equal(0, groupingMove.Key.SequenceIndex);
+            Assert.Equal(Figure.CreateKing(3, 0, Side.Red), groupingMove.Key.Figure);
         }
 
         [Fact]
@@ -143,7 +142,7 @@ namespace Checkers.Core.Tests.Bot
             var move = subject.FindBestMove(board, Side.Black, CancellationToken.None, options);
             Assert.Equal(0, subject.TotalMovesEstimated);
             Assert.Equal(Point.At(2, 2), move.Figure.Point);
-            Assert.Equal(0, move.SequenceIndex);
+            Assert.Equal(new MoveSequence(MoveStep.Jump(0, 0)), move.Sequence);
         }
 
         [Fact]
@@ -183,11 +182,11 @@ namespace Checkers.Core.Tests.Bot
         {
             var boardBuilder = new DraughtsBoardBuilder();
             var board = boardBuilder.Build();
-            var turnTimeLimitMs = 3000;
+            var turnTimeLimitMs = 2000;
 
             var subject = GetSubject();
             var results = new List<(int depth, long timeMs, int estimations)>();
-            for(int depth = 4; depth <= 30; depth += 4)
+            for(int depth = 4; depth <= 20; depth += 4)
             {
                 var watch = Stopwatch.StartNew();
                 var cts = new CancellationTokenSource(turnTimeLimitMs);

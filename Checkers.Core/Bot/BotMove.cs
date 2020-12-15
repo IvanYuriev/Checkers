@@ -1,4 +1,5 @@
 ﻿using Checkers.Core.Board;
+using Checkers.Core.Rules;
 using System;
 
 namespace Checkers.Core.Bot
@@ -10,31 +11,31 @@ namespace Checkers.Core.Bot
         public BotMove(int score)
         {
             Figure = Figure.Nop;
-            SequenceIndex = -1;
+            Sequence = default;
             Score = score;
         }
 
-        public BotMove(Figure figure, int sequenceIndex, int score)
+        public BotMove(Figure figure, MoveSequence sequence, int score)
         {
             Figure = figure;
-            SequenceIndex = sequenceIndex;
+            Sequence = sequence;
             Score = score;
         }
 
         public Figure Figure { get; private set; }
-        public int SequenceIndex { get; private set; }
+        public MoveSequence Sequence { get; private set; }
         public int Score { get; private set; }
 
-        public override int GetHashCode() => (Figure, SequenceIndex).GetHashCode();
+        public override int GetHashCode() => (Figure, Sequence).GetHashCode();
 
         public override bool Equals(object obj) => obj is BotMove m && Equals(m);
 
         public override string ToString()
         {
-            return $"{Figure}#{SequenceIndex}:{Score}";
+            return $"{Figure}:{Sequence}:{Score}";
         }
 
-        public bool Equals(BotMove other) => Figure == other.Figure && SequenceIndex == other.SequenceIndex;
+        public bool Equals(BotMove other) => Figure == other.Figure && Sequence == other.Sequence;
 
         public static bool operator ==(BotMove left, BotMove right)
         {

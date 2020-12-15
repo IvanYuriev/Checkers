@@ -4,7 +4,6 @@ using Checkers.Core.Rules.Commands;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,7 +63,7 @@ namespace Checkers.Core.Bot
             if (depth == options.MaxDepth && states.Count == 1)
             {
                 var singleState = states[0];
-                return new BotMove(singleState.Figure, 0, 0);
+                return new BotMove(singleState.Figure, singleState.MoveSequence, 0);
             }
 
             BotMove bestMove = new BotMove(Int32.MinValue);
@@ -114,7 +113,7 @@ namespace Checkers.Core.Bot
                 {
                     if (score > bestMove.Score)
                     {
-                        bestMove = new BotMove(state.Figure, state.SequenceIndex, score);
+                        bestMove = new BotMove(state.Figure, state.MoveSequence, score);
                     }
                     alpha = Math.Max(alpha, bestMove.Score);
                     //let's move cts.Cancel out of the lock scope
@@ -128,8 +127,8 @@ namespace Checkers.Core.Bot
         private void Log(string msg, SquareBoard board, Side side, State move, int score, int depth, int alpha, int beta)
         {
             var indent = new String('\t', options.MaxDepth - depth);
-            _logger.LogDebug(indent + msg + ":: {side}/{figure}#{index}; bounds: {alpha}/{beta}; score: {score}",
-                side, move.Figure, move.SequenceIndex, alpha, beta, score);
+            _logger.LogDebug(indent + msg + ":: {side}/{figure}/{index}; bounds: {alpha}/{beta}; score: {score}",
+                side, move.Figure, move.MoveSequence, alpha, beta, score);
         }
 
         private IList<State> GetStates(SquareBoard board, Side side)
@@ -140,7 +139,7 @@ namespace Checkers.Core.Bot
             {
                 for (var i = 0; i < figureMove.Value.Length; i++)
                 {
-                    result.Add(new State(figureMove.Key, i, board, figureMove.Value[i]));
+                    result.Add(new State(figureMove.Key, board, figureMove.Value[i]));
                 }
             }
             return result;
@@ -182,14 +181,12 @@ namespace Checkers.Core.Bot
         private struct State
         {
             public Figure Figure { get; private set; }
-            public int SequenceIndex { get; private set; }
             public SquareBoard Board { get; private set; }
             public MoveSequence MoveSequence { get; private set; }
 
-            public State(Figure figure, int sequenceIndex, SquareBoard board, MoveSequence moveSequence)
+            public State(Figure figure, SquareBoard board, MoveSequence moveSequence)
             {
                 Figure = figure;
-                SequenceIndex = sequenceIndex;
                 Board = board;
                 MoveSequence = moveSequence;
             }

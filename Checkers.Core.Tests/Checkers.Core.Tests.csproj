@@ -105,6 +105,8 @@
     <Compile Include="Bot\MockScoring.cs" />
     <Compile Include="Bot\NegaMaxBotTests.cs" />
     <Compile Include="Bot\BoardScoringTests.cs" />
+    <Compile Include="GameTests.cs" />
+    <Compile Include="IEnumerable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rules\EnglishDraughtsRulesTests.cs" />
     <Compile Include="XunitLogger.cs" />

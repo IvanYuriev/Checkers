@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Checkers.Core.Game
+namespace Checkers.Core
 {
     public class GameException : Exception
     {

@@ -1,4 +1,5 @@
-﻿namespace Checkers.Core.Board
+﻿
+namespace Checkers.Core.Board
 {
     public static class SideUtil
     {
@@ -9,5 +10,7 @@
 
             return Side.Nop;
         }
+
+        public static Side Convert(GameSide gameSide) => gameSide == GameSide.Black ? Side.Black : Side.Red;
     }
 }

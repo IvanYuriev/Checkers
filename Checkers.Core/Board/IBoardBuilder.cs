@@ -1,6 +1,6 @@
 ﻿using Checkers.Core.Board;
 
-namespace Checkers.Core.Game
+namespace Checkers.Core.Board
 {
     public interface IBoardBuilder
     {

@@ -1,7 +1,7 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Rules;
 
-namespace Checkers.Core.Game
+namespace Checkers.Core
 {
     internal struct History
     {
