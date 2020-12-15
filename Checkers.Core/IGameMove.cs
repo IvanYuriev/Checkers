@@ -9,14 +9,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Checkers.Core.GameMove
+namespace Checkers.Core
 {
-
-
-    //TODO: Game object should be active or passive (push or pull interaction with Player object)???
-    //TODO: How to limit time of move - for AI, for Player?
-    //TODO: include results table and history tracking - list of moves in a proper formatting
-
     public interface IGameMove
     {
         void Execute();

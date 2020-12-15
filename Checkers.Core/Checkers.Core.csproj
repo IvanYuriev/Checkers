@@ -57,10 +57,13 @@
     <Compile Include="Bot\NegaMaxBot.cs" />
     <Compile Include="Bot\TrivialBoardScoring.cs" />
     <Compile Include="Extensions\RulesExtensions.cs" />
-    <Compile Include="GameMove\StopGameMove.cs" />
+    <Compile Include="Game.RedoGameMove.cs" />
+    <Compile Include="Game.StopGameMove.cs" />
+    <Compile Include="Game.UndoGameMove.cs" />
+    <Compile Include="Game.WalkGameMove.cs" />
     <Compile Include="GameStatistics.cs" />
     <Compile Include="GameStatus.cs" />
-    <Compile Include="GameMove\IGameMove.cs" />
+    <Compile Include="IGameMove.cs" />
     <Compile Include="IGameStatistics.cs" />
     <Compile Include="IPlayer.cs" />
     <Compile Include="IStatisticsFormatter.cs" />
@@ -71,8 +74,7 @@
     <Compile Include="GameSide.cs" />
     <Compile Include="History.cs" />
     <Compile Include="Board\IBoardBuilder.cs" />
-    <Compile Include="GameMove\WalkGameMove.cs" />
-    <Compile Include="GameMove\YieldGameMove.cs" />
+    <Compile Include="YieldGameMove.cs" />
     <Compile Include="Rules\Commands\IMoveCommand.cs" />
     <Compile Include="Rules\Commands\JumpMoveCommand.cs" />
     <Compile Include="Rules\Commands\MoveCommandChain.cs" />

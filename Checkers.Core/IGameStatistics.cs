@@ -1,6 +1,5 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Extensions;
-using Checkers.Core.GameMove;
 using Checkers.Core.Rules;
 using Checkers.Core.Rules.Commands;
 using System;

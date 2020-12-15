@@ -1,8 +1,6 @@
 ﻿using Checkers.Core.Board;
 using Checkers.Core.Extensions;
-using Checkers.Core.GameMove;
 using Checkers.Core.Rules;
-using Checkers.Core.Rules.Commands;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Checkers.Core
 {
-    public class Game
+    public partial class Game
     {
         private readonly IRules _rulesProvider;
         private readonly IBoardBuilder _boardBuilder;
@@ -25,7 +23,7 @@ namespace Checkers.Core
         private uint _turn;
         private int _winnerIndex;
 
-        private IGameMove UndoMove, RedoMove;
+        private IGameMove UndoMove, RedoMove, StopMove;
         public Game(IRules rulesProvider, IBoardBuilder boardBuilder, IGameStatistics gameStatistics)
         {
             _rulesProvider = rulesProvider;
@@ -35,6 +33,7 @@ namespace Checkers.Core
             _gameStatistics = gameStatistics;
             UndoMove = new UndoGameMove(this);
             RedoMove = new RedoGameMove(this);
+            StopMove = new StopGameMove(this);
 
             _board = _boardBuilder.Build();
         }
@@ -69,11 +68,16 @@ namespace Checkers.Core
             while (_runningTask.Status != TaskStatus.Running) spin.SpinOnce();
         }
 
-        public void StopAndWait(int millisecondsTimeout = 3000)
+        public void Stop()
         {
             _isRunning = false; //TODO: CAS logic probably needed
-            Wait(millisecondsTimeout);
             Status = GameStatus.Stopped;
+        }
+
+        public void StopAndWait(int millisecondsTimeout = 3000)
+        {
+            Stop();
+            Wait(millisecondsTimeout);
         }
         public void Wait(int millisecondsTimeout = 3000)
         {
@@ -88,14 +92,17 @@ namespace Checkers.Core
             do
             {
                 var validMoves = _rulesProvider.GetMoves(Board, SideUtil.Convert(CurrentPlayer.Side));
-
                 var gameMoves = new List<IGameMove>(validMoves.Values.Count);
-                if (validMoves.Count > 0) gameMoves.AddRange(validMoves.Flatten((f, m) => new WalkGameMove(Walk, f, m)));
+                if (validMoves.Count > 0) gameMoves.AddRange(validMoves.Flatten((f, m) => new WalkGameMove(this, f, m)));
                 if (_undoHistory.Count > 0) gameMoves.Add(UndoMove);
                 if (_redoHistory.Count > 0) gameMoves.Add(RedoMove);
 
-                //block - it is already completed!
-                var move = CurrentPlayer.Choose(gameMoves.ToArray(), Board) ?? new StopGameMove(() => _isRunning = false);
+                var playerMoveTask = Task.Run(() => CurrentPlayer.Choose(gameMoves.ToArray(), Board));
+                while (Task.WhenAny(playerMoveTask, Task.Delay(300)).Result != playerMoveTask)
+                {
+                    if (!_isRunning) return; //interrupt player move because Game has Stopped!
+                }
+                var move = playerMoveTask.Result ?? StopMove;
                 move.Execute();
 
                 _gameStatistics.Append(move, this);
@@ -120,66 +127,6 @@ namespace Checkers.Core
                 // - then Undo should unmark it?
                 // - then to be able to make Redo should store it in History
                 // etc.
-            }
-        }
-
-        private void Walk(Figure figure, MoveSequence moveSequence)
-        {
-            _undoHistory.Push(new History { BoardBeforeMove = Board, Move = moveSequence, Side = CurrentPlayer.Side });
-
-            _board = new MoveCommandChain(figure, Board, moveSequence).Execute();
-
-            _redoHistory.Clear(); //no way to redo after making a walk move
-            CheckForWin();
-            _turn++;
-        }
-
-        public class UndoGameMove : IGameMove
-        {
-            private readonly Game _game;
-
-            internal UndoGameMove(Game game)
-            {
-                _game = game;
-            }
-            public void Execute()
-            {
-                //undo 2 moves to turn on the current player
-                var movesToUndo = _game._players.Length;
-                while (movesToUndo > 0 && _game._undoHistory.Count > 0)
-                {
-
-                    var history = _game._undoHistory.Pop();
-                    _game._board = history.BoardBeforeMove;
-                    _game._redoHistory.Push(history);
-                    _game.CheckForWin();
-                    _game._turn--;
-                    movesToUndo--;
-                }
-            }
-        }
-
-        public class RedoGameMove : IGameMove
-        {
-            private readonly Game _game;
-
-            internal RedoGameMove(Game game)
-            {
-                _game = game;
-            }
-            public void Execute()
-            {
-                var movesToRedo = _game._players.Length;
-                while (movesToRedo > 0 && _game._redoHistory.Count > 0)
-                {
-
-                    var history = _game._redoHistory.Pop();
-                    _game._board = history.BoardBeforeMove;
-                    _game._undoHistory.Push(history);
-                    _game.CheckForWin();
-                    _game._turn++;
-                    movesToRedo--;
-                }
             }
         }
     }

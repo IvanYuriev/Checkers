@@ -11,7 +11,6 @@ using Xunit.Abstractions;
 
 namespace Checkers.Core.Tests
 {
-    [Collection("Sequential")]
     public class GameTests
     {
         private readonly ITestOutputHelper testOutput;

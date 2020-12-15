@@ -9,9 +9,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Checkers.Core.GameMove
+namespace Checkers.Core
 {
-
     public class YieldGameMove : IGameMove
     {
         public void Execute()

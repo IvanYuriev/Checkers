@@ -1,9 +1,9 @@
 ﻿using Checkers.Core.Board;
-using Checkers.Core.GameMove;
 using Checkers.Core.Rules;
 using System;
 using System.Linq;
 using System.Threading;
+using static Checkers.Core.Game;
 
 namespace Checkers.Core.Bot
 {
