@@ -197,7 +197,7 @@ namespace Checkers.Core.Tests.Bot
 
             results.ForEach(x => _testOutput.WriteLine(x.ToString()));
             var maxTimeMs = results.Average(x => x.timeMs);
-            Assert.InRange(maxTimeMs - turnTimeLimitMs, Int32.MinValue, 1000);
+            Assert.InRange(maxTimeMs - turnTimeLimitMs, Int32.MinValue, 3000);
         }
 
         private IBot GetSubject(IRules rules = default, IBoardScoring scoring = default)

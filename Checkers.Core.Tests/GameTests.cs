@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Checkers.Core.Tests
 {
+    [Collection("Sequential")]
     public class GameTests
     {
         private readonly ITestOutputHelper testOutput;
@@ -28,6 +29,7 @@ namespace Checkers.Core.Tests
             var player2 = new MoqPlayer(GameSide.Red);
 
             game.Start(player1, player2);
+            game.Wait(1000);
 
             Assert.Equal(GameStatus.Started, game.Status);
             Assert.Equal(0u, game.Turn);
@@ -42,9 +44,9 @@ namespace Checkers.Core.Tests
             var player2 = new MoqPlayer(GameSide.Red);
 
             game.Start(player1, player2);
-            game.StopAndWait();
+            game.Wait();
 
-            Assert.Equal(GameStatus.Stopped, game.Status);
+            Assert.Equal(GameStatus.Started, game.Status);
             Assert.Equal(1u, game.Turn);
             Assert.Equal(player2, game.CurrentPlayer);
         }
@@ -57,7 +59,7 @@ namespace Checkers.Core.Tests
             var player2 = new MoqPlayer(GameSide.Red, MoqPlayer.FirstWalkMove);
 
             game.Start(player1, player2);
-            game.StopAndWait();
+            game.Wait();
 
             Assert.Equal(2u, game.Turn);
             Assert.Equal(player1, game.CurrentPlayer);
@@ -76,7 +78,7 @@ namespace Checkers.Core.Tests
                 MoqPlayer.UndoMove);
 
             game.Start(player1, player2);
-            game.StopAndWait(-1);
+            game.Wait();
 
             Assert.Equal(4, stat.BoardHistory.Count); //init board + 2 moves + terminal board
             Assert.Equal(stat.BoardHistory[0], game.Board);
@@ -101,10 +103,12 @@ namespace Checkers.Core.Tests
                 MoqPlayer.UndoMove);
 
             game.Start(player1, player2);
-            game.StopAndWait(-1);
+            game.Wait();
 
             Assert.Equal(8, stat.BoardHistory.Count);
             Assert.Equal(stat.BoardHistory[0], game.Board);
+            Assert.Equal(1u, game.Turn);
+            Assert.Equal(player2, game.CurrentPlayer);
         }
 
         [Fact]
@@ -113,6 +117,7 @@ namespace Checkers.Core.Tests
             var stat = new MoqStatictics();
             var game = GetSubject(gameStatistics: stat);
 
+            //move are 
             var player1 = new MoqPlayer(GameSide.Black,
                 MoqPlayer.FirstWalkMove,
                 MoqPlayer.FirstWalkMove,
@@ -125,10 +130,12 @@ namespace Checkers.Core.Tests
                 MoqPlayer.RedoMove);
 
             game.Start(player1, player2);
-            game.StopAndWait(-1);
+            game.Wait();
 
             Assert.Equal(9, stat.BoardHistory.Count);
             Assert.Equal(stat.BoardHistory[1], game.Board);
+            Assert.Equal(3u, game.Turn);
+            Assert.Equal(player2, game.CurrentPlayer);
         }
 
         private Game GetSubject(IRules rules = default, IBoardBuilder boardBuilder = default, IGameStatistics gameStatistics = default)

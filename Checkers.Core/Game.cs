@@ -19,7 +19,7 @@ namespace Checkers.Core
         private readonly Stack<History> _redoHistory;
         private readonly IPlayer[] _players = new IPlayer[2];
 
-        private bool _isRunning = false;
+        private volatile bool _isRunning = false;
         private Task _runningTask;
         private SquareBoard _board;
         private uint _turn;
@@ -60,6 +60,7 @@ namespace Checkers.Core
             _board = _boardBuilder.Build();
             _turn = 0;
             Status = GameStatus.Started;
+            _isRunning = true;
 
             _runningTask = Task.Run(GameLoop);
             
@@ -70,18 +71,21 @@ namespace Checkers.Core
 
         public void StopAndWait(int millisecondsTimeout = 3000)
         {
-            if (_runningTask == null) return;
-            if (_runningTask.Status != TaskStatus.Running);
-
             _isRunning = false; //TODO: CAS logic probably needed
-            _runningTask.Wait(millisecondsTimeout);
+            Wait(millisecondsTimeout);
             Status = GameStatus.Stopped;
+        }
+        public void Wait(int millisecondsTimeout = 3000)
+        {
+            if (_runningTask == null) return;
+            if (_runningTask.Status != TaskStatus.Running) return;
+
+            _runningTask.Wait(millisecondsTimeout);
         }
 
         private void GameLoop()
         {
-            _isRunning = true;
-            while (_isRunning)
+            do
             {
                 var validMoves = _rulesProvider.GetMoves(Board, SideUtil.Convert(CurrentPlayer.Side));
 
@@ -101,7 +105,7 @@ namespace Checkers.Core
                 {
                     foreach (var player in _players) player.GameUpdated(this);
                 });
-            }
+            } while (_isRunning);
         }
 
         private void CheckForWin()
