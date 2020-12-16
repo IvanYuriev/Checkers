@@ -1,4 +1,5 @@
 ﻿using Checkers.Core.Rules;
+using static Checkers.Core.Game;
 
 namespace Checkers.WPF
 {
@@ -6,16 +7,18 @@ namespace Checkers.WPF
     {
         public class MovesModel
         {
-            public MovesModel(string text, int index, MoveSequence sequence)
+            public MovesModel(string text, int index, WalkGameMove gameMove)
             {
                 Text = text;
                 Index = index;
-                Sequence = sequence;
+                GameMove = gameMove;
             }
 
             public string Text { get; }
             public int Index { get; }
-            public MoveSequence Sequence { get; }
+            public WalkGameMove GameMove { get; }
+
+            public MoveSequence Sequence => GameMove.MoveSequence;
         }
     }
 }

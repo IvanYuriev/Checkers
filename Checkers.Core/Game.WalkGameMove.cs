@@ -6,7 +6,7 @@ namespace Checkers.Core
 {
     public partial class Game
     {
-        internal class WalkGameMove : IGameMove
+        public class WalkGameMove : IGameMove
         {
             private readonly Game _game;
             private readonly Figure _figure;

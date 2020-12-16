@@ -10,6 +10,7 @@ namespace Checkers.Core.Bot
     public class BotPlayer : IPlayer
     {
         private readonly NegaMaxBot _bot;
+        private CancellationTokenSource _cts;
 
         public BotPlayer(GameSide side, IRules rules, IBoardScoring scoring)
         {
@@ -24,10 +25,10 @@ namespace Checkers.Core.Bot
         public IGameMove Choose(IGameMove[] moves, SquareBoard board)
         {
             var walkMoves = moves.Select(x => x as WalkGameMove).Where(x => x != null).ToArray();
-            if (walkMoves.Length == 0) return new YieldGameMove();
+            if (walkMoves.Length == 0) return null;
 
-            var cts = new CancellationTokenSource(TimeoutPerMoveMilliseconds);
-            var move = _bot.FindBestMove(board, SideUtil.Convert(Side), cts.Token);
+            _cts = new CancellationTokenSource(TimeoutPerMoveMilliseconds);
+            var move = _bot.FindBestMove(board, SideUtil.Convert(Side), _cts.Token);
 
             return walkMoves.FirstOrDefault(x => x.Figure == move.Figure && x.MoveSequence == move.Sequence);
         }
@@ -35,6 +36,12 @@ namespace Checkers.Core.Bot
         public void GameUpdated(Game game)
         {
             ; //ignore OR make some pre-processing in parallel
+        }
+
+        public void Cancel()
+        {
+            //TODO: extract to interface IPlayer and let GameBroker to cancel each player before Stop
+            _cts.Cancel(); //force cancel
         }
     }
 }

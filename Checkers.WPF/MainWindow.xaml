@@ -84,7 +84,7 @@
             <Button x:Name="btnStartRed" Content="Start as Red" Height="40" Click="StartRed" Margin="0, 0, 0, 5" Foreground="Red" />
             <Button x:Name="btnStartBlack" Content="Start as Black" Height="40" Click="StartBlack" Margin="0, 0, 0, 5" />
             <TextBlock />
-            <Button x:Name="btnUndo" Content="Undo" Height="40" Click="Undo" />
+            <!--<Button x:Name="btnUndo" Content="Undo" Height="40" Click="Undo" />-->
         </StackPanel>
 
         <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -113,7 +113,7 @@
                 </ItemsControl>
             </Viewbox>
             <StackPanel Margin="10">
-                <Button x:Name="btnPushBot" Content="Let Bot Move" Height="40" Click="MakeBotMove" IsEnabled="{Binding BotTurn}" />
+                <!--<Button x:Name="btnPushBot" Content="Let Bot Move" Height="40" Click="MakeBotMove" IsEnabled="{Binding BotTurn}" />-->
                 <TextBlock Text="List of moves for selected figure:" FontWeight="Bold" Margin="0,15,0,0" Foreground="White" />
                 <ItemsControl x:Name="lstMoves" DataContext="{Binding AvailableMoves}" Width="200" HorizontalContentAlignment="Center">
                     <ItemsControl.ItemTemplate>

@@ -38,6 +38,25 @@ namespace Checkers.Core.Rules
         IEnumerator IEnumerable.GetEnumerator() => _sequence.GetEnumerator();
 
         public override string ToString() => $"Sequence({String.Join("->", _sequence.ToArray())})";
+
+        public override bool Equals(object obj) => obj is MoveSequence m && Equals(m);
+
+        public bool Equals(MoveSequence other) => _set.SetEquals(other._set);
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException(); //TODO: implement this
+        }
+
+        public static bool operator ==(MoveSequence left, MoveSequence right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(MoveSequence left, MoveSequence right)
+        {
+            return !(left == right);
+        }
     }
 
 }

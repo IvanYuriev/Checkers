@@ -107,11 +107,8 @@ namespace Checkers.Core
 
                 _gameStatistics.Append(move, this);
 
-                //fire & forget update for players
-                Task.Run(() =>
-                {
-                    foreach (var player in _players) player.GameUpdated(this);
-                });
+                foreach (var player in _players) player.GameUpdated(this);
+
             } while (_isRunning);
         }
 

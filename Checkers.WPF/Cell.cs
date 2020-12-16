@@ -6,18 +6,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Checkers.Core;
 using Checkers.Core.Board;
-using static Checkers.WPF.MainWindow;
 
 namespace Checkers.WPF
 {
 	public class Cell : INotifyPropertyChanged
 	{
-		private readonly Figure _figure;
 
-        public Cell(Figure figure, Side playerSide)
+        public Cell(Figure figure, GameSide playerSide)
         {
             _figure = figure;
-			_active = figure.Side == playerSide;
+			_active = figure.Side == SideUtil.Convert(playerSide);
 		}
 
         public Point Pos
@@ -25,7 +23,12 @@ namespace Checkers.WPF
 			get { return _figure.Point; }
 		}
 
-		public Figure Figure => _figure;
+		private Figure _figure;
+		public Figure Figure
+		{
+			get { return _figure; }
+			set { _figure = value; OnPropertyChanged("Figure"); OnPropertyChanged("Pos"); OnPropertyChanged("Type"); }
+		}
 
 		public PieceType Type
 		{
@@ -49,5 +52,11 @@ namespace Checkers.WPF
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
-	}
+
+		public override bool Equals(object obj) => obj is Cell cell && cell.Equals(this);
+
+		public bool Equals(Cell other) => this.Figure == other.Figure && this.Active == other.Active;
+
+		public override int GetHashCode() => (_figure, Active).GetHashCode();
+    }
 }

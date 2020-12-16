@@ -14,8 +14,8 @@ namespace Checkers.Core.Board
             var board = new SquareBoard(8);
             board.Set(Figure.CreateSimple(0, 7, Side.Red));
             board.Set(Figure.CreateSimple(0, 3, Side.Red));
-            board.Set(Figure.CreateSimple(2, 1, Side.Black));
-            board.Set(Figure.CreateSimple(7, 0, Side.Black));
+            board.Set(Figure.CreateSimple(1, 2, Side.Black));
+            //board.Set(Figure.CreateSimple(7, 0, Side.Black));
             return board;
         }
     }
