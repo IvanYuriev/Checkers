@@ -71,6 +71,7 @@ namespace Checkers.Core
         public void Stop()
         {
             _isRunning = false; //TODO: CAS logic probably needed
+            foreach (var player in _players) player?.Cancel();
             Status = GameStatus.Stopped;
         }
 
@@ -100,7 +101,11 @@ namespace Checkers.Core
                 var playerMoveTask = Task.Run(() => CurrentPlayer.Choose(gameMoves.ToArray(), Board));
                 while (Task.WhenAny(playerMoveTask, Task.Delay(300)).Result != playerMoveTask)
                 {
-                    if (!_isRunning) return; //interrupt player move because Game has Stopped!
+                    if (!_isRunning)
+                    {
+                        CurrentPlayer.Cancel();
+                        return; //interrupt player move because Game has Stopped!
+                    }
                 }
                 var move = playerMoveTask.Result ?? StopMove;
                 move.Execute();
@@ -115,11 +120,12 @@ namespace Checkers.Core
         private void CheckForWin()
         {
             // TODO: extract it into Rules class - because there are a lot of draw cases (pretty complex)
-            var validEnemyMoves = _rulesProvider.GetMoves(Board, SideUtil.Convert(CurrentPlayer.Side));
+            var validEnemyMoves = _rulesProvider.GetMoves(Board, SideUtil.Opposite(SideUtil.Convert(CurrentPlayer.Side)));
             if (validEnemyMoves.Count == 0)
             {
                 _winnerIndex = CurrentPlayerIndex;
                 Status = _winnerIndex == 0 ? GameStatus.Player1Wins : GameStatus.Player2Wins;
+                _isRunning = false;
                 //TODO: mark game as finished?
                 // - then Undo should unmark it?
                 // - then to be able to make Redo should store it in History

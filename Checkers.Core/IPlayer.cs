@@ -16,6 +16,7 @@ namespace Checkers.Core
         GameSide Side { get; }
         IGameMove Choose(IGameMove[] moves, SquareBoard board);
         void GameUpdated(Game game);
+        void Cancel();
     }
 
 }

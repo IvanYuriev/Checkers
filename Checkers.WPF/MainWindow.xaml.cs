@@ -2,23 +2,13 @@
 using Checkers.Core.Board;
 using Checkers.Core.Bot;
 using Checkers.Core.Rules;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using static Checkers.Core.Game;
 using Figure = Checkers.Core.Board.Figure;
 using Point = Checkers.Core.Board.Point;
@@ -35,7 +25,7 @@ namespace Checkers.WPF
         private readonly IBoardBuilder _boardBuilder;
         private readonly IBoardScoring _boardScoring;
         private readonly IGameStatistics _gameStatistics;
-        private readonly ManualResetEvent _waitHandler;
+        private readonly AutoResetEvent _waitHandler;
         private IPlayer _userPlayer, _botPlayer;
 
         private ObservableCollection<Cell> Cells;
@@ -50,7 +40,7 @@ namespace Checkers.WPF
             _gameStatistics = new GameStatistics();
             _game = new Game(_rules, _boardBuilder, _gameStatistics);
 
-            _waitHandler = new ManualResetEvent(false);
+            _waitHandler = new AutoResetEvent(false);
 
             InitializeComponent();
 
@@ -77,16 +67,8 @@ namespace Checkers.WPF
                 .ToDictionary(key => key.Key, val => val.ToArray());
 
             _waitHandler.WaitOne(); //wait for the user to choose move
-            _waitHandler.Reset();
 
             var selectedGameMove = SelectedMoveModel?.GameMove;
-            App.Current.Dispatcher.Invoke(() =>
-            {
-                AvailableMoves.Clear();
-                SelectedMoveModel = null;
-                SelectedFigure = Figure.Nop;
-            });
-
             return selectedGameMove;
         }
 
@@ -97,26 +79,24 @@ namespace Checkers.WPF
 
         public void Cancel()
         {
-            _waitHandler.Set();
+            if (_game.CurrentPlayer == _userPlayer) _waitHandler.Set();
         }
 
         #endregion
 
         private void RedrawBoard()
         {
-            var game = _game;
-            if (game.Status != GameStatus.Started)
-            {
-                //game over
-                MessageBox.Show($"Game Is Over, Winner Side: {game.Winner.Side}");
-                return;
-            }
-
-            UpdateGameBoardCells(game);
+            UpdateGameBoardCells(_game);
 
             AvailableMoves.Clear();
             SelectedMoveModel = null;
             SelectedFigure = Figure.Nop;
+
+            if (_game.Status != GameStatus.Started)
+            {
+                //game over
+                MessageBox.Show($"Game Is Over, Winner Side: {_game.Winner?.Side}");
+            }
         }
 
         private void UpdateGameBoardCells(Game game)
@@ -151,6 +131,7 @@ namespace Checkers.WPF
             Cells.Clear();
 
             Side = GameSide.Red;
+            _waitHandler.Reset();
             _userPlayer = this;
             _botPlayer = new BotPlayer(GameSide.Black, _rules, _boardScoring);
             _game.Start(_userPlayer, _botPlayer);

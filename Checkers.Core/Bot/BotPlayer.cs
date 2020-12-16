@@ -40,8 +40,7 @@ namespace Checkers.Core.Bot
 
         public void Cancel()
         {
-            //TODO: extract to interface IPlayer and let GameBroker to cancel each player before Stop
-            _cts.Cancel(); //force cancel
+            _cts?.Cancel(); //force cancel
         }
     }
 }
