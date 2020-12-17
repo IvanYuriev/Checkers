@@ -154,11 +154,7 @@ namespace Checkers.WPF
             AvailableMoves.Clear();
             Cells.Clear();
 
-            if (_game.Status != GameStatus.None)
-            {
-                _game.Stop();
-                await _game;
-            }
+            await _game.Stop();
             Side = side;
             _botPlayer = new BotPlayer(side == GameSide.Black ? GameSide.Red : GameSide.Black, _rules, _boardScoring);
 

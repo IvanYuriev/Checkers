@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace Checkers.Core
 {
+    /// <summary>
+    /// Game is NOT Thread safe in case of parallel calls for Start and Stop methods
+    /// </summary>
     public partial class Game
     {
         private readonly IRules _rulesProvider;
@@ -49,6 +52,7 @@ namespace Checkers.Core
         public void Start(IPlayer player1, IPlayer player2)
         {
             if (player1.Side == player2.Side) throw new GameException("Players should have different sides");
+            if (Status == GameStatus.Started) throw new GameException("Game is already started");
 
             _players = new IPlayer[] { player1, player2 };
             _winnerIndex = -1;
@@ -60,17 +64,26 @@ namespace Checkers.Core
             Status = GameStatus.Started;
             _isRunning = true;
 
-            _runningTask = Task.Run(async () => await GameLoop());
+            _runningTask = Task.Factory.StartNew(async () => await GameLoop(),
+                CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)
+                .Unwrap();
         }
 
-        public void Stop()
+        public async Task Stop()
+        {
+            await StopGameLoop();
+            Status = GameStatus.Stopped;
+        }
+
+        private async Task StopGameLoop()
         {
             _isRunning = false; //TODO: CAS logic probably needed
             if (_players != null)
             {
                 foreach (var player in _players) player?.Cancel();
             }
-            Status = GameStatus.Stopped;
+            var taskCopy = _runningTask;
+            if (taskCopy != null) await _runningTask;
         }
 
         private async Task GameLoop()
@@ -135,16 +148,6 @@ namespace Checkers.Core
                 // - then to be able to make Redo should store it in History
                 // etc.
             }
-        }
-        public void StopAndWait(int millisecondsTimeout = 3000)
-        {
-            Stop();
-            Wait(millisecondsTimeout);
-        }
-        public void Wait(int millisecondsTimeout = 3000)
-        {
-            if (_runningTask == null) return;
-            _runningTask.Wait(millisecondsTimeout);
         }
 
         public TaskAwaiter GetAwaiter()

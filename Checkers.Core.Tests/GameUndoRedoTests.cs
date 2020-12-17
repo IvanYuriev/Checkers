@@ -18,48 +18,6 @@ namespace Checkers.Core.Tests
         }
 
         [Fact]
-        public async Task Start_BeforeAnyMove_InitialGameState()
-        {
-            var game = GetSubject();
-            var player1 = new PresetTestPlayer(GameSide.Black);
-            var player2 = new PresetTestPlayer(GameSide.Red);
-
-            game.Start(player1, player2);
-            await game;
-
-            Assert.Equal(0u, game.Turn);
-            Assert.Equal(player1, game.CurrentPlayer);
-        }
-
-        [Fact]
-        public async Task Start_AfterSingleMove_TurnToSecondPlayer()
-        {
-            var game = GetSubject();
-            var player1 = new PresetTestPlayer(GameSide.Black, PresetTestPlayer.FirstWalkMove);
-            var player2 = new PresetTestPlayer(GameSide.Red);
-
-            game.Start(player1, player2);
-            await game;
-
-            Assert.Equal(1u, game.Turn);
-            Assert.Equal(player2, game.CurrentPlayer);
-        }
-
-        [Fact]
-        public async Task Start_AfterSecondMove_TurnToFirstPlayerAgain()
-        {
-            var game = GetSubject();
-            var player1 = new PresetTestPlayer(GameSide.Black, PresetTestPlayer.FirstWalkMove);
-            var player2 = new PresetTestPlayer(GameSide.Red, PresetTestPlayer.FirstWalkMove);
-
-            game.Start(player1, player2);
-            await game;
-
-            Assert.Equal(2u, game.Turn);
-            Assert.Equal(player1, game.CurrentPlayer);
-        }
-
-        [Fact]
         public async Task Undo_FirstMove()
         {
             var stat = new MoqStatictics();
