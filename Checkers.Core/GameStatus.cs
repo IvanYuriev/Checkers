@@ -19,7 +19,8 @@ namespace Checkers.Core
         Player1Wins,
         Player2Wins,
         Draw,
-        Stopped
+        Stopped,
+        Error
     }
 
 }

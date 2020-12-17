@@ -2,11 +2,13 @@
 using Checkers.Core.Board;
 using Checkers.Core.Bot;
 using Checkers.Core.Rules;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using static Checkers.Core.Game;
@@ -26,31 +28,40 @@ namespace Checkers.WPF
         private readonly IBoardScoring _boardScoring;
         private readonly IGameStatistics _gameStatistics;
         private readonly AutoResetEvent _waitHandler;
-        private IPlayer _userPlayer, _botPlayer;
+        private IPlayer _userPlayer;
+        private BotPlayer _botPlayer;
 
         private ObservableCollection<Cell> Cells;
         private MovesModel SelectedMoveModel;
-        private Dictionary<Figure, WalkGameMove[]> AllAvailableMoves;
+        private Dictionary<Figure, WalkGameMove[]> WalkMoves;
+        private IGameMove UndoMove;
+        private IGameMove RedoMove;
 
+        //================
+        //TODO: re-implement this using Commands or even Reactive approach
+        //================
         public MainWindow()
         {
             _rules = new EnglishDraughtsRules();
-            _boardBuilder = new PresetBoardBuilder();// new DraughtsBoardBuilder(); //
+            _boardBuilder = new DraughtsBoardBuilder();
+            //_boardBuilder = new PresetBoardBuilder();
             _boardScoring = new TrivialBoardScoring();
             _gameStatistics = new GameStatistics();
             _game = new Game(_rules, _boardBuilder, _gameStatistics);
-
+            _userPlayer = this;
             _waitHandler = new AutoResetEvent(false);
+
+            WalkMoves = new Dictionary<Figure, WalkGameMove[]>();
+            AvailableMoves = new ObservableCollection<MovesModel>();
+            Cells = new ObservableCollection<Cell>();
 
             InitializeComponent();
 
-            AllAvailableMoves = new Dictionary<Figure, WalkGameMove[]>();
-            AvailableMoves = new ObservableCollection<MovesModel>();
-            Cells = new ObservableCollection<Cell>();
-            lstMoves.ItemsSource = AvailableMoves;
-            GameField.DataContext = this;
+            LayoutRoot.DataContext = this;
             ChessBoard.ItemsSource = Cells;
         }
+
+        
 
         #region IPlayer implementation
         public GameSide Side { get; set; }
@@ -60,14 +71,21 @@ namespace Checkers.WPF
             // 1. exchange moves to categories - Undo, Redo, Walk
             // 2. Walk moves should be used to update AllAvailableMoves
 
-            AllAvailableMoves = moves
+            WalkMoves = moves
                 .Where(x => x is WalkGameMove)
                 .Cast<WalkGameMove>()
                 .GroupBy(x => x.Figure)
                 .ToDictionary(key => key.Key, val => val.ToArray());
 
+            UndoMove = moves.FirstOrDefault(x => x is UndoGameMove);
+            OnPropertyChanged("UndoMoveAvailable");
+            RedoMove = moves.FirstOrDefault(x => x is RedoGameMove);
+            OnPropertyChanged("RedoMoveAvailable");
+
+            _waitHandler.Reset();
             _waitHandler.WaitOne(); //wait for the user to choose move
 
+            _botPlayer.TimeoutPerMoveMilliseconds = SecondsPerMove * 1000;
             var selectedGameMove = SelectedMoveModel?.GameMove;
             return selectedGameMove;
         }
@@ -92,11 +110,7 @@ namespace Checkers.WPF
             SelectedMoveModel = null;
             SelectedFigure = Figure.Nop;
 
-            if (_game.Status != GameStatus.Started)
-            {
-                //game over
-                MessageBox.Show($"Game Is Over, Winner Side: {_game.Winner?.Side}");
-            }
+            Info = $"Status: {_game.Status}{Environment.NewLine}Turn: {_game.Turn}{Environment.NewLine}Side move now: {_game.CurrentPlayer.Side}";
         }
 
         private void UpdateGameBoardCells(Game game)
@@ -124,24 +138,36 @@ namespace Checkers.WPF
             }
         }
 
-        private void StartRed(object sender, RoutedEventArgs e)
+        private async void StartRed(object sender, RoutedEventArgs e)
         {
-            AllAvailableMoves.Clear();
+            await StartGame(GameSide.Red);
+        }
+
+        private async void StartBlack(object sender, RoutedEventArgs e)
+        {
+            await StartGame(GameSide.Black);
+        }
+
+        private async Task StartGame(GameSide side)
+        {
+            WalkMoves.Clear();
             AvailableMoves.Clear();
             Cells.Clear();
 
-            Side = GameSide.Red;
-            _waitHandler.Reset();
-            _userPlayer = this;
-            _botPlayer = new BotPlayer(GameSide.Black, _rules, _boardScoring);
-            _game.Start(_userPlayer, _botPlayer);
+            if (_game.Status != GameStatus.None)
+            {
+                _game.Stop();
+                await _game;
+            }
+            Side = side;
+            _botPlayer = new BotPlayer(side == GameSide.Black ? GameSide.Red : GameSide.Black, _rules, _boardScoring);
+
+            if (_userPlayer.Side == GameSide.Red)
+                _game.Start(_userPlayer, _botPlayer);
+            else
+                _game.Start(_botPlayer, _userPlayer);
 
             RedrawBoard();
-        }
-
-        private void StartBlack(object sender, RoutedEventArgs e)
-        {
-            
         }
 
         #region Notifiable Properties
@@ -154,11 +180,32 @@ namespace Checkers.WPF
         }
 
         private Figure _selectedFigure;
-
         public Figure SelectedFigure
         {
             get { return _selectedFigure; }
             set { _selectedFigure = value; OnPropertyChanged("SelectedFigure"); }
+        }
+
+        private int _secondsPerMove = 5;
+        public int SecondsPerMove
+        {
+            get { return _secondsPerMove; }
+            set 
+            {
+                if (value >= 1 && value <= 30)
+                    _secondsPerMove = value; 
+                OnPropertyChanged("SecondsPerMove"); 
+            }
+        }
+
+        public bool UndoMoveAvailable => UndoMove != null;
+        public bool RedoMoveAvailable => RedoMove != null;
+
+        private string _info;
+        public string Info
+        {
+            get { return _info; }
+            set { _info = value; OnPropertyChanged("Info"); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -178,7 +225,7 @@ namespace Checkers.WPF
             else
             {
                 AvailableMoves.Clear();
-                if (AllAvailableMoves.TryGetValue(cell.Figure, out var figureMoves) && figureMoves.Length > 0)
+                if (WalkMoves.TryGetValue(cell.Figure, out var figureMoves) && figureMoves.Length > 0)
                 {
                     foreach (var move in figureMoves.Select((gameMove, i) => new MovesModel($"{i + 1}", i, gameMove)))
                     {
@@ -211,7 +258,19 @@ namespace Checkers.WPF
 
         private void MakeMove(object sender, RoutedEventArgs e)
         {
-            if (_game.CurrentPlayer == _userPlayer) _waitHandler.Set();
+            _waitHandler.Set();
+        }
+
+        private void Undo(object sender, RoutedEventArgs e)
+        {
+            SelectedMoveModel = new MovesModel("undo", -1, UndoMove);
+            _waitHandler.Set();
+        }
+
+        private void Redo(object sender, RoutedEventArgs e)
+        {
+            SelectedMoveModel = new MovesModel("redo", -1, RedoMove);
+            _waitHandler.Set();
         }
     }
 }

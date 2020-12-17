@@ -79,17 +79,17 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Vertical" Grid.Row="0" Background="Azure">
-            <TextBlock Text="Sec per move: " />
-            <TextBox x:Name="txtSecPerMove" Text="5" />
             <Button x:Name="btnStartRed" Content="Start as Red" Height="40" Click="StartRed" Margin="0, 0, 0, 5" Foreground="Red" />
             <Button x:Name="btnStartBlack" Content="Start as Black" Height="40" Click="StartBlack" Margin="0, 0, 0, 5" />
             <TextBlock />
-            <!--<Button x:Name="btnUndo" Content="Undo" Height="40" Click="Undo" />-->
+            <Button x:Name="btnUndo" Content="Undo" Height="40" Click="Undo" IsEnabled="{Binding UndoMoveAvailable}" />
+            <Button x:Name="btnRedo" Content="Redo" Height="40" Click="Redo" IsEnabled="{Binding RedoMoveAvailable}" />
+            <TextBlock x:Name="txtInfo" Text="{Binding Info}" FontWeight="Bold" FontSize="14" FontFamily="Cambria" />
         </StackPanel>
 
         <StackPanel Grid.Column="1" Orientation="Horizontal">
             <Viewbox x:Name="GameField" IsEnabled="{Binding PlayerTurn}">
-                <ItemsControl Name="ChessBoard" Background="AntiqueWhite">
+                <ItemsControl Name="ChessBoard" Background="AntiqueWhite" ItemsSource="{Binding Cells}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <Canvas Width="8" Height="8" Background="{StaticResource Checkerboard}"/>
@@ -113,9 +113,10 @@
                 </ItemsControl>
             </Viewbox>
             <StackPanel Margin="10">
-                <!--<Button x:Name="btnPushBot" Content="Let Bot Move" Height="40" Click="MakeBotMove" IsEnabled="{Binding BotTurn}" />-->
+                <TextBlock Text="Sec per move (1-30): " />
+                <TextBox x:Name="txtSecPerMove" Text="{Binding SecondsPerMove}"  />
                 <TextBlock Text="List of moves for selected figure:" FontWeight="Bold" Margin="0,15,0,0" Foreground="White" />
-                <ItemsControl x:Name="lstMoves" DataContext="{Binding AvailableMoves}" Width="200" HorizontalContentAlignment="Center">
+                <ItemsControl x:Name="lstMoves" ItemsSource="{Binding AvailableMoves}" Width="200" HorizontalContentAlignment="Center">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Tag="{Binding}" MinWidth="150" Content="{Binding Text}" Click="MakeMove" MouseEnter="MoveSelected" />

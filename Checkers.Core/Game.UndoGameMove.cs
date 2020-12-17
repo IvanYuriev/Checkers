@@ -3,7 +3,7 @@ namespace Checkers.Core
 {
     public partial class Game
     {
-        private class UndoGameMove : IGameMove
+        public class UndoGameMove : IGameMove
         {
             private readonly Game _game;
 
@@ -13,16 +13,16 @@ namespace Checkers.Core
             }
             public void Execute()
             {
-                //undo 2 moves to turn on the current player
                 var movesToUndo = _game._players.Length;
-                while (movesToUndo > 0 && _game._undoHistory.Count > 0)
+                while (movesToUndo > 0)
                 {
+                    var history = _game._currentHistoryItem.Previous;
+                    if (history == null) break;
 
-                    var history = _game._undoHistory.Pop();
-                    _game._board = history.BoardBeforeMove;
-                    _game._redoHistory.Push(history);
-                    _game.CheckForWin();
-                    _game._turn--;
+                    _game._currentHistoryItem = history;
+                    _game._board = history.Value.Board;
+                    //_game.CheckForWin();
+                    _game._turn = history.Value.Turn;
                     movesToUndo--;
                 }
             }

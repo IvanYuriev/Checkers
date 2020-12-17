@@ -28,7 +28,9 @@ namespace Checkers.Core.Bot
             if (walkMoves.Length == 0) return null;
 
             _cts = new CancellationTokenSource(TimeoutPerMoveMilliseconds);
-            var move = _bot.FindBestMove(board, SideUtil.Convert(Side), _cts.Token);
+
+            var depth = 8 * Math.Pow(TimeoutPerMoveMilliseconds / 1000, 0.4);
+            var move = _bot.FindBestMove(board, SideUtil.Convert(Side), _cts.Token, new NegaMaxBot.BotOptions { MaxDepth = (int)depth });
 
             return walkMoves.FirstOrDefault(x => x.Figure == move.Figure && x.MoveSequence == move.Sequence);
         }

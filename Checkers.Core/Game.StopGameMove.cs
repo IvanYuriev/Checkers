@@ -13,7 +13,7 @@ namespace Checkers.Core
             }
             public void Execute()
             {
-                _game.Stop();
+                _game._isRunning = false;
             }
         }
     }
